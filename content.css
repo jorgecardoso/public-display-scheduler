@@ -1,0 +1,18 @@
+/** {cursor: none;}*/
+
+#pdscheduler {
+	display: none;
+
+    /*set the div in the top-left corner of the screen*/
+    position:fixed;
+    top:100px;
+    left:100px;
+    
+    /*set the width and height to 100% of the screen*/
+    width:500px;
+    height:250px;
+    
+    z-index: 1000000;
+   
+    background-color:#aaa;
+}
