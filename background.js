@@ -1,5 +1,6 @@
 // Copyright (c) 2011 Jorge C. S. Cardoso
 
+var MAINTAB = "mainTab";
 /*
  * The local folder for videos. 
  */
@@ -20,13 +21,16 @@ var scheduleRequestDelay = 10*60*1000;
  */
 var started = false;
 
-/* The tab that our scheduler is controlling */
-var tab;
+/* The tabs that our scheduler is controlling */
+//var tab;
+
+var tabs = new Object();
 
 var tabListDirectory;
 
-/* The timer used to change content on the tab */
-var timer = undefined;
+/* The timers used to change content on the tab */
+var timers = new Object();
+var timeouts = new Object();
 
 var timerSchedule;
 
@@ -62,6 +66,15 @@ function updateJobTimeouts() {
 function setupJobs() {
 	log("Setting up cron jobs: ");
 	for (var i = 0; i < schedule.length; i++) {
+	
+		if ( typeof(schedule[i].tabName) != "undefined" ) {
+			timerName = schedule[i].tabName;
+		} else {
+			timerName = MAINTAB;
+		}
+		
+		setPlayerTimer(timerName, 1000+Math.random()*10000 );
+		
 		schedule[i].cronjob = new Cron.Job( schedule[i].cron, function () {
         		log("Ran job");
       		});
@@ -70,12 +83,19 @@ function setupJobs() {
 
 
 
-function getNextJob() {
+function getNextJob(tabName) {
 	var toReturn;
 	
 	updateJobTimeouts();
 	
 	for (var i = 0; i < schedule.length; i++) {
+		var jobTab = schedule[i].tabName;
+		if ( typeof(jobTab) == "undefined" ) {
+			jobTab = MAINTAB;
+		}
+		if ( tabName != jobTab ) {
+			continue;
+		}
 		var timeout = schedule[i].timeout;
 		if ( timeout < 1000 ) {
 			
@@ -85,6 +105,8 @@ function getNextJob() {
 			return toReturn;
 		}
 	}
+	
+	return undefined;
 }
 
 /********************************* Schedule requests ********************/
@@ -138,7 +160,7 @@ function onSchedule(sc) {
 			setupJobs();
 			timerSchedule = setTimeout(requestSchedule, scheduleRequestDelay);
 			
-			setPlayerTimer(1000);
+			//setPlayerTimer(1000);
 			return;
 		}
 		
@@ -155,18 +177,29 @@ function onSchedule(sc) {
 
 /******************************* App switching **********************/
 
-function timerEllapsed() {
-	timer = undefined;
-	log("Timer ellapsed");
+function timerEllapsed(timerName) {
+	timers[timerName] = undefined;
+	log("Timer '" + timerName + "' ellapsed");
 	if (started) {
-		var next = getNextJob();
+		var next = getNextJob(timerName);
 		
+		if ( typeof(timeouts[timerName]) == "undefined" ) {
+			timeouts[timerName] = new Object();
+		}
+			
 		if ( typeof(next) == 'undefined' ) {
 			log("Nothing to run right now");
-			setPlayerTimer(5000);
+			
+			var timeout = timeouts[timerName].timerTimeout;
+			if ( typeof (timeout) == "undefined" ) {
+				timeout = 5000;
+				timeouts[timerName].timerTimeout = timeout;
+			}
+			timeouts[timerName].timerTimeout *= 2; 
+			setPlayerTimer(timerName, timeout);
 			return;
 		} 
-		
+		timeouts[timerName].timerTimeout = 0;
 		//current = (current+1)%schedule.length;
 		
 		var url = next.url;
@@ -174,6 +207,10 @@ function timerEllapsed() {
 		var comment = next.comment;
 		if ( typeof(comment) == 'undefined' ) {
 			comment = "";
+		}
+		var tabName = next.tabName;
+		if ( typeof(tabName) == 'undefined' ) {
+			tabName = MAINTAB;
 		}
 		
 		/*
@@ -197,7 +234,7 @@ function timerEllapsed() {
 			// get the next video to play
 			if ( videoList.length == 0 ) {
 				// oops, no videos  in dir
-				setPlayerTimer(1000);
+				setPlayerTimer(timerName, 1000);
 				return;
 			}
 			
@@ -215,7 +252,7 @@ function timerEllapsed() {
 				log("Detected duration in filename: " + duration);
 			} else {
 				log("Could not find duration in filename.");
-				setPlayerTimer(1000);
+				setPlayerTimer(timerName, 1000);
 				return;
 			}
 			
@@ -224,10 +261,11 @@ function timerEllapsed() {
 			
 		}
 		log("Loading app: " + url + " for " + duration + " seconds." + "(" +comment + ")");
-		setPlayerTimer(duration*1000);
+		setPlayerTimer(timerName, duration*1000);
 
 		try {
-			chrome.tabs.update(tab.id, {url: url, selected:true});
+			//chrome.tabs.update(tab.id, {url: url, selected:true});
+			checkCreateAndUpdateTab(timerName, url);
 		} catch (err) {
 			log("Could not update tab.");
 			stop();
@@ -241,10 +279,29 @@ function timerEllapsed() {
 }
 
 /************************** Tab management **************************/
+
+function checkCreateAndUpdateTab(tabName, url) {
+	log("Checking if tab " + tabName + " exists");
+	if ( typeof(tabs[tabName]) == "undefined" ) {
+		createAndUpdate(tabName, url);
+	} else {
+		log("Tab " + tabName + " exists. Updating with url: " + url);
+		chrome.tabs.update(tabs[tabName].tab.id, {url: url, selected:true});
+	}
+}
+
+
+function createAndUpdate(tabName, url) {
+	log("Creating tab " + tabName);
+	chrome.tabs.create({}, generateTabCreatedAndUpdate(tabName, url));
+	
+}
+
+
 function onTabUpdated(tabId, changeInfo, _tab) {
-	if (tabId == tab.id && changeInfo.status == 'complete') {
+	if (changeInfo.status == 'complete') {
 		
-			log("Main Tab updated.");
+			
 			log("Injecting content script and css...");
 			chrome.tabs.executeScript(tabId, {file: "content.js"});
 			chrome.tabs.insertCSS(tabId, {file: "content.css"});
@@ -254,21 +311,40 @@ function onTabUpdated(tabId, changeInfo, _tab) {
 
 function onTabRemoved(tabId, removeInfo) {
 	log("Tab removed: " + tabId );
-	if (typeof(tab) != "undefined" && tabId == tab.id) {
+	if (typeof(tabs[MAINTAB].tab) != "undefined" && tabId == tabs[MAINTAB].tab.id) {
 		log("Main tab closed");
 		stop();
-		tab = undefined;
+		tabs[MAINTAB] = undefined;
+		//tab = undefined;
 	} 
 }
 
-function tabCreated(_tab) {
-	log("Main tab created: " + _tab.id);
-	tab = _tab;
+function tabCreated(_tab, tabName) {
+	log("Tab created: " + _tab.id + " " + tabName);
+	//tab = _tab;
 	
-	chrome.tabs.update(tab.id, {url: 'face.html', selected:true});
+	tabs[tabName] = new Object();
+	tabs[tabName].tab = _tab;
+	
+	
+	//chrome.tabs.update(tab.id, {url: 'face.html', selected:true});
+}
+function generateTabCreatedAndUpdate(myTabName, url) {
+	log("Creating tab " + myTabName);
+    return function (_tab) {
+        tabCreated(_tab, myTabName);
+        log("Updating tab " + myTabName + " with url: " + url);
+		chrome.tabs.update(_tab.id, {url: url, selected:true});
+    }
 }
 
+function generateTabCreated (myTabName) {
 
+    return function (_tab) {
+        tabCreated(_tab, myTabName);
+
+    }
+}
 /************************ Directory file listing *********************/
 
 function reListFiles() {
@@ -284,7 +360,8 @@ function onFileList(request) {
 
 function start() {
 	log('Starting');
-	chrome.tabs.create({}, tabCreated);
+	//chrome.tabs.create({}, tabCreated);
+	checkCreateAndUpdateTab(MAINTAB, "face.html");
 	reListFiles();
 	
 	started = true;
@@ -296,13 +373,19 @@ function stop() {
 	started = false;
 } 
 
+function generateTimerEllapsed(timerName) {
 
-function setPlayerTimer(duration) {
-	if ( typeof(timer) == 'undefined' ) {
-		log("Setting player timer to: " + duration);
-		timer = setTimeout(timerEllapsed, duration);
+    return function () {
+        timerEllapsed(timerName);
+    }
+}
+
+function setPlayerTimer(timerName, duration) {
+	if ( typeof(timers[timerName]) == 'undefined' ) {
+		log("Setting player timer '" + timerName + "' to: " + duration);
+		timers[timerName] = setTimeout(generateTimerEllapsed(timerName), duration);
 	} else {
-		log("Timer is still running, ignoring");
+		log("Timer '" + timerName + "' is still running, ignoring");
 	}
 }
 
@@ -325,7 +408,7 @@ function main() {
 	requestSchedule();
 
 	start();
-	setPlayerTimer(1000);
+	setPlayerTimer(MAINTAB, 1000);
 
 }
 
