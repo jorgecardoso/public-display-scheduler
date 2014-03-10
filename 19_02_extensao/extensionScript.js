@@ -1,63 +1,72 @@
-console.log("extensionScript is running...");
+console.log("extensionScript.js is loading...");
 
-//listen for messages coming from appScript.js	
-document.addEventListener('newMessage', function(data) {
-	console.log("MESSAGES ExtensionScript | << Receiving from appScript | Message: " + data.detail.state + " + " + data.detail.tabUrl);
-	
-	var state = data.detail.state;
-	
-	switch(state){
-		case "created":
-			chrome.extension.sendMessage({state : data.detail.state, url: data.detail.tabUrl});
-    		console.log("MESSAGES ExtensionScript | >> Sending to Extension | Message: " + data.detail.state + " + " + data.detail.tabUrl);
-    		break;
-    	case "loaded":
-    		chrome.extension.sendMessage({state : data.detail.state, url: data.detail.tabUrl});
-    		console.log("MESSAGES ExtensionScript | >> Sending to Extension | Message: " + data.detail.state + " + " + data.detail.tabUrl);
-    		break;
-    	case "displaying":
-    		chrome.extension.sendMessage({state : data.detail.state, url: data.detail.tabUrl});
-    		console.log("MESSAGES ExtensionScript | >> Sending to Extension | Message: " + data.detail.state + " + " + data.detail.tabUrl);
-    		break;  
-    	case "hideReady":
-    		chrome.extension.sendMessage({state : data.detail.state, url: data.detail.tabUrl, time: data.detail.time});
-    		console.log("MESSAGES ExtensionScript | >> Sending to Extension | Message: " + data.detail.state + " + " + data.detail.tabUrl + " + " + data.detail.time + " seconds");
-    		break;
-    	case "not_loaded":
-    		chrome.extension.sendMessage({state : data.detail.state, url: data.detail.tabUrl, time: data.detail.time});
-    		console.log("MESSAGES ExtensionScript | >> Sending to Extension | Message: " + data.detail.state + " + " + data.detail.tabUrl + " + " + data.detail.time + " seconds");  		
-			break;
-	}
+var messageOnLoad = "onLoad";
+
+
+function timeStamp() {
+// Create a date object with the current time
+  var now = new Date();
+ 
+// Create an array with the current hour, minute and second
+  var time = [ now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds() ];
+ 
+// Convert hour from military time
+  time[0] = ( time[0] < 12 ) ? time[0] : time[0] - 12;
+ 
+// If hour is 0, set it to 12
+  time[0] = time[0] || 12;
+ 
+// If seconds and minutes are less than 10, add a zero
+  for ( var i = 1; i < 3; i++ ) {
+    if ( time[i] < 10 ) {
+      time[i] = "0" + time[i];
+    }
+  }
+ 
+// Return the formatted string
+  return  time.join(":");
+}
+
+//listen for messages coming from appScript.js  
+document.addEventListener('msgFromAppScript', function(data) {
+  var state = data.detail.state;
+
+  var time = timeStamp();
+  console.log(time + " | MESSAGES ExtensionScript | << Receiving message <" + state + "> from appScript of ");
+
+  switch(state){
+    case "created":
+      var time = timeStamp();
+      
+      //sending message created to Extension
+      //console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + "> to Extension");
+      //chrome.extension.sendMessage({state : state});
+
+      //sending message "onLoad" to appScript
+      console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + messageOnLoad +"> to appScript of");
+      window.postMessage({state: messageOnLoad}, "http://localhost/27_02_simpleApp");
+    break;
+
+    case "loaded":
+      console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state +"> to Extension");
+      chrome.extension.sendMessage({state : state}, function(){
+        alert("done it!");
+      });
+    break;
+  }
 });
-
 
 //listen for messages coming from extension
 chrome.runtime.onMessage.addListener(
-  function(message, sender) {
-    console.log("MESSAGES ExtensionScript | << Receiving from Extension | Message: " + message.state + " + " + message.url);
-    
-    var state = message.state;
-    
-     switch(state){
-     	case "onCreate":
-     		window.postMessage({message_script: message.state}, message.url);
-			console.log("MESSAGES ExtensionScrip | >> Sending to appScript | Message: " + message.state + " to URL: " + message.url);
-			break;
-	case "onLoad":
-		    window.postMessage({state: message.state, url: message.url}, message.url);
-			console.log("MESSAGES ExtensionScript | >> Sending to appScript | Message: " + message.state + " to URL: " + message.url);
-			break;
-	case "onDisplay":
-			window.postMessage({state: message.state, url: message.url}, message.url);
-			console.log("MESSAGES ExtensionScript | >> Sending to appScript | Message: " + message.state + " to URL: " + message.url);
-			break;
-	case "onHideNotification":
-			window.postMessage({state: message.state, url: message.url}, message.url);
-			console.log("MESSAGES ExtensionScript | >> Sending to appScript | Message: " + message.state + " to URL: " + message.url);
-			break;
-	case "onHide":
-			window.postMessage({state: message.state, url: message.url}, message.url);
-			console.log("MESSAGES ExtensionScript | >> Sending to appScript | Message: " + message.state + " to URL: " + message.url);
-			break;
-     }
+ function(message, sender) {
+   var state = message.state;
+   var time = timeStamp();
+
+   console.log(time + " | MESSAGES ExtensionScript | << Receiving message <" + state + "> from Extension");
+
+   switch(state){
+   case "onLoad":
+       console.log("MESSAGES ExtensionScript | >> Sending message <" + state +" to appScript of");
+       window.postMessage({state: message.state}, "http://localhost/27_02_simpleApp");
+   }
 });

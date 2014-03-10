@@ -1,24 +1,18 @@
 {
   "manifest_version": 2,
-  "name": "19_02_clean",
+  "name": "27_02_new",
   "version": "1.0",
   
   "browser_action": {
-    "default_title": "19_02_clean"
+    "default_title": "27_02_new"
   },
 
   "background": {
     "page": "scheduler.html"
   },
   
-  "externally_connectable": {
-    "ids": [
-      "*"
-    ]
-  },
-  
   "permissions": [
-  	"tabs", "http://*/*", "https://*/*"
+  	"tabs", "http://*/*", "https://*/*", "background"
 	],
   
   "content_security_policy": "script-src 'self' https://code.jquery.com/jquery.js; object-src 'self'"
