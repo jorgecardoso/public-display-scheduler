@@ -12,6 +12,7 @@ var tabIdToURL = {};
 var currentTabId = -1;
 var counter = 0;
 var counterSequence = 0;
+var coisa;
 
 //messages (communication between extension - extensionScript - appScript)
 var messageOnCreate = "onCreate";
