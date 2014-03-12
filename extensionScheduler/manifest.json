@@ -1,0 +1,22 @@
+{
+  "manifest_version": 2,
+  "name": "11_03",
+  "version": "1.0",
+  
+  "browser_action": {
+    "default_title": "11_03",
+    "default_popup": "popup.html"  
+  },
+
+  "background": {
+    "scripts": ["scheduler.js","jquery.js"]
+  },
+
+  "options_page": "options.html",
+  
+  "permissions": [
+  	"tabs", "http://*/*", "https://*/*", "background", "storage"
+	],
+  
+  "content_security_policy": "script-src 'self' https://code.jquery.com/jquery.js; object-src 'self'"
+}
