@@ -8,13 +8,16 @@ var firstRun = true;
 var options = "options.html";
 
 var code = 'window.location.reload();';
+var messageOnCreate = "onCreate";
 var messageOnLoad = "onLoad";
-var messageOnDisplay = "onDisplay";
-var messageOnHideNotification = "onHideNotification";
-var messageOnHide = "onHide";
+var messageOnResume = "onResume";
+var messageOnPauseRequest = "onPauseRequest";
+var messageOnPause = "onPause";
+var messageOnUnload = "onUnload";
+var messageOnDestroy = "onDestroy";
 
 //hardcoded schedules
-var schedulesTest = [["http://localhost/05_03_simpleApp/", 30],["http://localhost/05_03_simpleAppJoke/", 30]];
+var schedulesTest = [["http://localhost/05_03_simpleAppVideo/", 30],["http://localhost/05_03_simpleApp/", 30]];
 
 var openOptions = function optionsPage(){
 	chrome.tabs.create({ url: options, active: true });
@@ -43,7 +46,12 @@ var startScheduler = function starting(){
 	console.log("SCHEDULER | Next app: " + appUrl);
 
 	//open next app on a background tab
-	openAppInBackgroundTab(appUrl);
+	openAppInBackgroundTab(appUrl).done(function(data){
+		var tabId = getTabIdFromUrl(tabIdToURL,appUrl);
+		var time = timeStamp();
+		console.log(time + " | MESSAGES Extension | >> Sending message <" + messageOnCreate + "> to extensionScript (" + appUrl + " , " + tabId + ")");
+		chrome.tabs.sendMessage(tabId, {state: messageOnCreate, url: appUrl});
+	});
 }
 
 function displayingApp(tabId){
@@ -78,7 +86,12 @@ function displayingApp(tabId){
 			console.log("TABS | Tab with url " + nextAppUrl + " is already created!");
 		}
 		else{
-			openAppInBackgroundTab(nextAppUrl);
+			openAppInBackgroundTab(nextAppUrl).done(function(data){
+				var nextTabId = getTabIdFromUrl(tabIdToURL,nextAppUrl);
+				var time = timeStamp();
+				console.log(time + " | MESSAGES Extension | >> Sending message <" + messageOnCreate + "> to extensionScript (" + appUrl + " , " + tabId + ")");
+				chrome.tabs.sendMessage(nextTabId, {state: messageOnCreate, url: nextAppUrl});
+			});
 		}
 	});
 
@@ -86,7 +99,7 @@ function displayingApp(tabId){
 	/////////////////////////////////////////////
 
 	//when job duration is almost done (10 seconds before)
-	var timeHideNotification = new Timer(function(){
+	var timerPauseRequest = new Timer(function(){
 		var appReady = isAppReady(appsReady,schedulesTest[0][0]);
 
 		if(appReady === true){
@@ -98,12 +111,12 @@ function displayingApp(tabId){
 
 		//send onHideNotification to current application
 		var time = timeStamp();
-		console.log(time + " | MESSAGES Extension | >> Sending message <" + messageOnHideNotification + "> to extensionScript (" + appUrl + " , " + tabId + ")");
-		chrome.tabs.sendMessage(tabId, {state: messageOnHideNotification, url: appUrl});
+		console.log(time + " | MESSAGES Extension | >> Sending message <" + messageOnPauseRequest + "> to extensionScript (" + appUrl + " , " + tabId + ")");
+		chrome.tabs.sendMessage(tabId, {state: messageOnPauseRequest, url: appUrl});
 	}, (appDuration * 1000) - hideNotificationTime);
 
 	//when job duration is done
-	var timer = new Timer(function() {
+	var timerPause = new Timer(function() {
 
 		/////////////////////////////////////////////
 		//       Open next app on active tab       //
@@ -114,10 +127,7 @@ function displayingApp(tabId){
 		/////////////////////////////////////////////
 
 		//send onHide message to current app before removing it
-		chrome.tabs.sendMessage(tabId, {state: messageOnHide, url: appUrl});
-		chrome.tabs.executeScript(tabId, {code: code}, function(array){
-			chrome.tabs.executeScript(tabId, {file: "extensionScript.js", runAt: "document_start"});
-		});
+		chrome.tabs.sendMessage(tabId, {state: messageOnPause, url: appUrl});
 
 	}, appDuration * 1000);
 }
@@ -148,7 +158,7 @@ function main(){
 		var url = sender.tab.url;
 		var time = timeStamp();
 
-		if(state === "hideReady"){
+		if(state === "pauseRequestReady"){
 			console.log(time + " | MESSAGES Extension | << Receiving message <" + state + " , " + message.time + "> from extensionScript(" + url + " , " + id + ")");
 		}
 		else{
@@ -177,7 +187,7 @@ function main(){
 	      		break;
 			break;
 
-			case "hideReady":
+			case "pauseReady":
 				if(message.time > 0){
 					console.log("APPS | Application " + url + " needs more " + message.time + " seconds !");
 					var extraTime = message.time;
@@ -187,9 +197,23 @@ function main(){
 				}
 			break;
 
-			case "not_loaded":
-				//removes tab
-				//chrome.tabs.remove(id);
+			case "paused":
+				//if current app was interrupted by a background app for only a few seconds
+				//return to resumed state
+
+				//else send message onUnload
+				var time = timeStamp();
+		       	console.log(time + " | MESSAGES Extension | >> Sending message <" + messageOnUnload + "> to extensionScript (" + url + " , " + id + ")");
+				chrome.tabs.sendMessage(id, {state: messageOnUnload, url: url});
+			break;
+
+			case "createdFromAppScript":
+			reloadTab(id).done(function(data){
+				//send messageOnLoad
+				var time = timeStamp();
+		       	console.log(time + " | MESSAGES Extension | >> Sending message <" + messageOnLoad + "> to extensionScript (" + url + " , " + id + ")");
+				chrome.tabs.sendMessage(id, {state: messageOnLoad, url: url});
+			});
 			break;
 		}
 	});
@@ -226,10 +250,27 @@ function findDurationByUrl(apps,url){
 
 //loads an application on a background page
 function openAppInBackgroundTab(tabUrl){
+	var def = $.Deferred();
 	console.log("APPS | Opening application " + tabUrl + " on background tab...");
 	chrome.tabs.create({ url: tabUrl, active: false }, function(tab){
-		chrome.tabs.executeScript(tab.id, {file: "extensionScript.js", runAt: "document_start"});
+		chrome.tabs.executeScript(tab.id, {file: "extensionScript.js", runAt: "document_end"}, function(array){
+			var time = timeStamp();
+			def.resolve();
+		});
 	});
+
+	return def;
+}
+
+function reloadTab(tabId){
+	var def = $.Deferred();
+	chrome.tabs.executeScript(tabId, {code: code}, function(array){
+		chrome.tabs.executeScript(tabId, {file: "extensionScript.js", runAt: "document_end"}, function(array){
+			def.resolve();
+		});
+	});
+
+	return def;
 }
 
 function timeStamp() {
@@ -262,8 +303,8 @@ function activateBackgroundTab(tabId,url){
 		console.log("INSIDE activateBackgroundTab!");
 		if(tab.status === "complete"){
 			var time = timeStamp();
-			console.log(time + " | MESSAGES Extension | >> Sending message <" + messageOnDisplay + "> to extensionScript");
-	      	chrome.tabs.sendMessage(tabId,{state : messageOnDisplay, url: url});
+			console.log(time + " | MESSAGES Extension | >> Sending message <" + messageOnResume + "> to extensionScript");
+	      	chrome.tabs.sendMessage(tabId,{state : messageOnResume, url: url});
 		}
 	});
 }

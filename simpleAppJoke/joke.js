@@ -22,55 +22,43 @@ function functionWithData(data) {
 
 //lifecycle functions
 function onCreate(callback){
-	console.log("LIFECYCLE | onCreate of " + url + " is running...");
+	var time = timeStamp();
+	console.log(time + " | LIFECYCLE | onCreate of " + url + " is running...");
 		
+	callback();
+}
+
+function onLoad(callback){
+	console.log("LIFECYCLE | onLoad of " + url + " is running...");
+
 	//calculates a random number between 1 and 5
 	randomNumber = Math.floor((Math.random()*5)+1);
 	console.log("Random number: " + randomNumber);
 	
 	var url = 'http://api.icndb.com/jokes/random/' + randomNumber;
 	//get jokes from server
-	$.when($.getJSON(url, functionWithData)).then(function(){
-		//when done, sends message to appScript
-		callback();
+	($.getJSON(url, functionWithData)).done(function(){
+		var sizeJokes = jokes.length;
+		//if any error occurs and no jokes are available
+		if(sizeJokes === 0){
+			console.log("Getting jokes from server again...");
+			//try to get jokes from server again
+			var url = 'http://api.icndb.com/jokes/random/' + randomNumber;
+			$.when($.getJSON(url, functionWithData)).then(function(){
+				console.log("Size of jokes: " + sizeJokes);
+				//when operation is done, send message to appScript
+				callback();
+			});
+		}
+		else{
+			//verify if array of jokes have correct data
+			callback();
+		}		
 	});
 }
 
-function onLoad(callback){
-	console.log("LIFECYCLE | onLoad of " + url + " is running...");
-	
-	var sizeJokes = jokes.length;
-	console.log("Size of jokes: " + sizeJokes);
-	
-	if(sizeJokes === 0){
-		console.log("Getting jokes from server again...");
-		//something went wrong, get jokes from server again
-		var url = 'http://api.icndb.com/jokes/random/' + randomNumber;
-		$.when($.getJSON(url, functionWithData)).then(function(){
-			console.log("Size of jokes: " + sizeJokes);
-			//when operation is done, send message to appScript
-			callback();
-		});
-	}
-	else{
-		//verifying if array of jokes have correct data
-		for(var i = 0; i < jokes.length; i++){
-			if(jokes[i] === "undefined"){
-				//something wrong happened, try to get new jokes
-				console.log("Something went wrong! ");
-			}
-			
-			else{
-				console.log("Everything went well!");
-			}
-		}
-
-		callback();	
-	}
-}
-
-function onDisplay(){
-	console.log("LIFECYCLE | onDisplay of " + url + " is running...");
+function onResume(){
+	console.log("LIFECYCLE | onResume of " + url + " is running...");
 	
 	$('#randomJoke').append(jokes[counter - 1] + "</br>");
 	counter--;
@@ -88,10 +76,8 @@ function onDisplay(){
 }
 
 //calculates if more time is needed to display all jokes
-function onHideNotification(callback){
-	console.log("LIFECYCLE | onHideNotification of " + url + " is running...");
-
-	console.log("onHideNotification of ChuckNorrisJokes is running...");
+function onPauseRequest(callback){
+	console.log("LIFECYCLE | onFinishRequest of " + url + " is running...");
 	console.log("Showed jokes: " + showedJokes);
 	console.log("Random number: " + randomNumber);
 	
@@ -111,8 +97,29 @@ function onHideNotification(callback){
 	}
 }
 
-function onHide(callback){
-	console.log("LIFECYCLE | onHide of " + url + " is running...");
+function onPause(callback){
+	console.log("LIFECYCLE | onPause of " + url + " is running...");
+	//clear all variables
+
+	setTimeout(function(){
+		callback();
+	},3000);
+}
+
+function onUnload(callback){
+	console.log("LIFECYCLE | onUnload of " + url + " is running...");
+	//clear all variables
+	setTimeout(function(){
+		callback();
+	},3000);
+
+	//saves jokes obtained from the server to use if anything goes wrong next time
+
+	//callback();
+}
+
+function onDestroy(callback){
+	console.log("LIFECYCLE | onDestroy of " + url + " is running...");
 	//clear all variables
 	callback();
 }

@@ -24,11 +24,14 @@ function timeStamp() {
 	return  time.join(":");
 }
 
+var time = timeStamp();
+console.log("TIME:" + time);
+
 //listen for messages coming from appScript.js  
 document.addEventListener('msgFromAppScript', function(data,source) {
 	var state = data.detail.state;
 
-	if(state === "hideReady"){
+	if(state === "pauseReady"){
 		var time = timeStamp();
 		console.log(time + " | MESSAGES ExtensionScript | << Receiving message <" + state + " , " + data.detail.time + "> from appScript of ");
 	}
@@ -45,19 +48,32 @@ document.addEventListener('msgFromAppScript', function(data,source) {
 	      	chrome.extension.sendMessage({state : state});
 		break;
 
+		case "createdFromAppScript":
+			var time = timeStamp();
+			console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + "> to Extension");
+			//reload application's page
+	      	chrome.extension.sendMessage({state : state});
+		break;
+
 		case "loaded":
 			var time = timeStamp();
 			console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + "> to Extension");
 	      	chrome.extension.sendMessage({state : state});
 		break;
 
-		case "hideReady":
+		case "pauseReady":
 			var time = timeStamp();
 			console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + " , " + data.detail.time + "> to Extension");
 	      	chrome.extension.sendMessage({state : state, time: data.detail.time});
 		break;
 
-		case "not_loaded":
+		case "paused":
+			var time = timeStamp();
+			console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + "> to Extension");
+	      	chrome.extension.sendMessage({state : state, time: data.detail.time});
+		break;
+
+		case "createdFromAppScript":
 			var time = timeStamp();
 			console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + "> to Extension");
 	      	chrome.extension.sendMessage({state : state});
@@ -76,25 +92,37 @@ chrome.runtime.onMessage.addListener(
 		console.log(time + " | MESSAGES ExtensionScript | << Receiving message <" + state + "> from Extension");
 
 		switch(state){
+			case "onCreate":
+				var time = timeStamp();
+				console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + " to appScript " + "(" + url + ")");
+       			window.postMessage({state: message.state}, url);
+			break;
+
 			case "onLoad":
 				var time = timeStamp();
 				console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + " to appScript " + "(" + url + ")");
        			window.postMessage({state: message.state}, url);
 			break;
 
-			case "onDisplay":
+			case "onResume":
 				var time = timeStamp();
 				console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + "> to appScript " + "(" + url + ")");
        			window.postMessage({state: message.state}, url);
 			break;
 
-			case "onHideNotification":
+			case "onPauseRequest":
 				var time = timeStamp();
 				console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + "> to appScript " + "(" + url + ")");
        			window.postMessage({state: message.state}, url);
 			break;
 
-			case "onHide":
+			case "onPause":
+				var time = timeStamp();
+				console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + "> to appScript " + "(" + url + ")");
+       			window.postMessage({state: message.state}, url);	
+			break;
+
+			case "onUnload":
 				var time = timeStamp();
 				console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + "> to appScript " + "(" + url + ")");
        			window.postMessage({state: message.state}, url);	

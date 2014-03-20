@@ -31,6 +31,12 @@ function functionWithData(data) {
 	return deferred.promise();	
 };
 
+function pause() {
+	console.log("AQUIIIIIIIIIIIIIIIIIIIIII" + swfobject.getObjectById('randomVideo'));
+    swfobject.getObjectById('randomVideo').pauseVideo();
+}
+
+
 //auxiliar function to count time on screen
 function countingTime(){
 	console.log("Counting seconds...");
@@ -40,8 +46,12 @@ function countingTime(){
 //lifecycle functions
 function onCreate(callback){
 	console.log("LIFECYCLE | onCreate of " + document.URL + " is running...");
-	
-	var sizeWords = words.length;
+	callback();
+}
+
+function onLoad(callback){
+	console.log("LIFECYCLE | onLoad of " + document.URL + " is running...");
+		var sizeWords = words.length;
 	//calculates a random number between 1 and sizeWords-1 (0 can never happen!!!!!)
 	randomNumber = getRandomInt(0,sizeWords-1);
 	//get word in that position	
@@ -54,20 +64,16 @@ function onCreate(callback){
 	});
 }
 
-function onLoad(callback){
-	console.log("LIFECYCLE | onLoad of " + document.URL + " is running...");
-	callback();
-}
-
-function onDisplay(){
-	console.log("LIFECYCLE | onDisplay of " + document.URL + " is running...");
+function onResume(){
+	console.log("LIFECYCLE | onResume of " + document.URL + " is running...");
 	console.log("RandomVideo is displaying...");
 	//starts playing random video
-	swfobject.embedSWF("http://www.youtube.com/e/" + id + "?enablejsapi=1&playerapiid=ytplayer?rel=0&autoplay=1", "randomVideo", "600", "240", "9.0.0");
+	var params = { allowScriptAccess: "always" };
+	swfobject.embedSWF("http://www.youtube.com/e/" + id + "?enablejsapi=1&playerapiid=ytplayer?rel=0&autoplay=1", "randomVideo", "600", "240", "9.0.0",null, null, params);
 }
 
-function onHideNotification(callback){
-	console.log("LIFECYCLE | onHideNotification of " + document.URL + " is running...");
+function onPauseRequest(callback){
+	console.log("LIFECYCLE | onPauseRequest of " + document.URL + " is running...");
 	//calculates how many time is needed to finish video
 	console.log("Seconds ellapsed: " + secondsEllapsed);
 	console.log("Video duration: " + videoDuration);
@@ -81,8 +87,26 @@ function onHideNotification(callback){
 		callback();
 }
 
-function onHide(callback){
-	console.log("LIFECYCLE | onHide of " + document.URL + " is running...");
+function onPause(callback){
+	console.log("LIFECYCLE | onPause of " + document.URL + " is running...");
+	//clear all variables
+
+	//pause video
+	pause();
+
+	setTimeout(function(){
+		callback();
+	},5000);
+}
+
+function onUnload(callback){
+	console.log("LIFECYCLE | onUnload of " + document.URL + " is running...");
+	//clear all variables
+	callback();
+}
+
+function onDestroy(callback){
+	console.log("LIFECYCLE | onDestroy of " + document.URL + " is running...");
 	//clear all variables
 	callback();
 }

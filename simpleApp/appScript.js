@@ -49,22 +49,33 @@ function onLoadAux(callback){
 	onLoad(callback);
 }
 
-function onDisplayAux(){
-	console.log("LIFECYCLE | onDisplayAux of " + url + " is running...");
-	state = "displaying";
-	onDisplay();
+function onResumeAux(){
+	console.log("LIFECYCLE | onResumeAux of " + url + " is running...");
+	onResume();
 }
 
-function onHideNotificationAux(callback){
-	console.log("LIFECYCLE | onHideNotificationAux " + url + " is running...");
-	state = "hideReady";
-	onHideNotification(callback);
+function onPauseRequestAux(callback){
+	console.log("LIFECYCLE | onPauseRequestAux " + url + " is running...");
+	state = "pauseReady";
+	onPauseRequest(callback);
 }
 
-function onHideAux(callback){
-	console.log("LIFECYCLE | onHideAux " + url + " is running...");
-	state = "not_loaded";
-	onHide(callback);
+function onPauseAux(callback){
+	console.log("LIFECYCLE | onPauseAux " + url + " is running...");
+	state = "paused";
+	onPause(callback);
+}
+
+function onUnloadAux(callback){
+	console.log("LIFECYCLE | onUnloadAux " + url + " is running...");
+	state = "createdFromAppScript";
+	onUnload(callback);
+}
+
+function onDestroyAux(callback){
+	console.log("LIFECYCLE | onDestroyAux " + url + " is running...");
+	//state = "not_loaded";
+	onDestroy(callback);
 }
 
 //create custom event with argument "state" and "url"
@@ -104,24 +115,39 @@ function messageReceived(event){
 	var time = timeStamp();
 	
 	switch(state){
+		case "onCreate":
+			console.log(time + " | MESSAGES AppScript | << Receiving message <" + state + "> from extensionScript (" + originUrl + ")");
+			onCreateAux(sendMessageToExtensionScript);
+			break;
+
 		case "onLoad":
 			console.log(time + " | MESSAGES AppScript | << Receiving message <" + state + "> from extensionScript (" + originUrl + ")");
 			onLoadAux(sendMessageToExtensionScript);
 			break;
 			
-		case "onDisplay":
+		case "onResume":
 			console.log(time + " | MESSAGES AppScript | << Receiving message <" + state + "> from extensionScript (" + originUrl + ")");
-			onDisplayAux();
+			onResumeAux();
 			break;
 			
-		case "onHideNotification":
+		case "onPauseRequest":
 			console.log(time + " | MESSAGES AppScript | << Receiving message <" + state + "> from extensionScript (" + originUrl + ")");
-			onHideNotificationAux(sendMessageToExtensionScriptExtraTime);
+			onPauseRequestAux(sendMessageToExtensionScriptExtraTime);
 			break;
 			
-		case "onHide":
+		case "onPause":
 			console.log(time + " | MESSAGES AppScript | << Receiving message <" + state + "> from extensionScript (" + originUrl + ")");
-			onHideAux(sendMessageToExtensionScript);
+			onPauseAux(sendMessageToExtensionScript);
+			break;
+
+		case "onUnload":
+			console.log(time + " | MESSAGES AppScript | << Receiving message <" + state + "> from extensionScript (" + originUrl + ")");
+			onUnloadAux(sendMessageToExtensionScript);
+			break;	
+
+		case "onDestroy":
+			console.log(time + " | MESSAGES AppScript | << Receiving message <" + state + "> from extensionScript (" + originUrl + ")");
+			onDestroyAux(sendMessageToExtensionScript);
 			break;		
 	}	
 }
@@ -139,5 +165,5 @@ $(document).ready(function() {
 	url = document.URL;
 
 	//execute onCreate on startup
-	onCreateAux(sendMessageToExtensionScript);
+	//onCreateAux(sendMessageToExtensionScript);
 });   
