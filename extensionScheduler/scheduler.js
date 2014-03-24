@@ -17,7 +17,10 @@ var messageOnUnload = "onUnload";
 var messageOnDestroy = "onDestroy";
 
 //hardcoded schedules
-var schedulesTest = [["http://localhost/05_03_simpleAppVideo/", 30],["http://localhost/05_03_simpleApp/", 30]];
+var schedulesTest = [["http://localhost/05_03_simpleAppVideo/", 30],["http://localhost/05_03_simpleApp/", 30],["http://localhost/05_03_simpleAppJoke/", 30]];
+
+var backgroundAppTest = [["http://localhost/05_03_simpleBackgroundApp/", 10],["http://localhost/05_03_simpleBackgroundApp2/", 10]];
+
 
 var openOptions = function optionsPage(){
 	chrome.tabs.create({ url: options, active: true });
@@ -44,6 +47,15 @@ var startScheduler = function starting(){
 	//get 1st application
 	var appUrl = schedulesTest[0][0];
 	console.log("SCHEDULER | Next app: " + appUrl);
+
+	//load background applications on inactive tabs
+	loadBackgroundApps(backgroundAppTest).done(function(data){
+		for(var i = 0; i < backgroundAppTest.length; i++){
+			var bckAppUrl = backgroundAppTest[i][0];
+			var bckAppId = getTabIdFromUrl(tabIdToURL,bckAppUrl);
+			chrome.tabs.sendMessage(bckAppId, {state: messageOnCreate, url: bckAppUrl});
+		}
+	});
 
 	//open next app on a background tab
 	openAppInBackgroundTab(appUrl).done(function(data){
@@ -166,6 +178,17 @@ function main(){
 		}
 
 		switch(state){
+			case "showMe":
+				for(var i = 0; i < schedulesTest.length; i++){
+					console.log("APPS IN ARRAY: " + schedulesTest[i]);
+				}
+
+				//compare priority levels from current app and "showMe()" app
+				//if current is bigger, keeps running and when done "showMe()" app is shown
+
+				//else pauses current application and starts running immediatly
+			break;
+
 			case "created":
 				//send message onLoad
 				var time = timeStamp();
@@ -334,6 +357,24 @@ function isTabCreated(url){
 	});
 
 	return def;
+}
+
+function loadBackgroundApps(arrayOfApps){
+	var def = $.Deferred();
+	var promises = [];
+
+	for(var i = 0; i < arrayOfApps.length; i++){
+		var backgroundApp = arrayOfApps[i][0];
+		chrome.tabs.create({ url: backgroundApp, active: false }, function(tab){
+			chrome.tabs.executeScript(tab.id, {file: "extensionScript.js", runAt: "document_end"}, function(array){
+				def.resolve();
+			});
+		});
+
+		promises.push(def);
+	}
+
+	return $.when.apply($, promises).promise();
 }	
 
 /////////////////////////////////////////////
