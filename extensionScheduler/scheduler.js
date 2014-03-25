@@ -17,9 +17,9 @@ var messageOnUnload = "onUnload";
 var messageOnDestroy = "onDestroy";
 
 //hardcoded schedules
-var schedulesTest = [["http://localhost/05_03_simpleAppVideo/", 30],["http://localhost/05_03_simpleApp/", 30],["http://localhost/05_03_simpleAppJoke/", 30]];
+var schedulesTest = [["http://localhost/05_03_simpleApp/", 30, 2],["http://localhost/05_03_simpleAppVideo/", 30, 2],["http://localhost/05_03_simpleAppJoke/", 30, 2]];
 
-var backgroundAppTest = [["http://localhost/05_03_simpleBackgroundApp/", 10],["http://localhost/05_03_simpleBackgroundApp2/", 10]];
+var backgroundAppTest = [["http://localhost/05_03_simpleBackgroundApp/", 10, 2],["http://localhost/05_03_simpleBackgroundApp2/", 10, 2]];
 
 
 var openOptions = function optionsPage(){
@@ -48,17 +48,19 @@ var startScheduler = function starting(){
 	var appUrl = schedulesTest[0][0];
 	console.log("SCHEDULER | Next app: " + appUrl);
 
-	//load background applications on inactive tabs
+	//when all background applications are loaded (but not ready to show up) on inactive tabs
 	loadBackgroundApps(backgroundAppTest).done(function(data){
 		for(var i = 0; i < backgroundAppTest.length; i++){
+			//send message onCreate to each tabs
 			var bckAppUrl = backgroundAppTest[i][0];
 			var bckAppId = getTabIdFromUrl(tabIdToURL,bckAppUrl);
 			chrome.tabs.sendMessage(bckAppId, {state: messageOnCreate, url: bckAppUrl});
 		}
 	});
 
-	//open next app on a background tab
+	//open first app on a background tab
 	openAppInBackgroundTab(appUrl).done(function(data){
+		//when done, send message onCreate
 		var tabId = getTabIdFromUrl(tabIdToURL,appUrl);
 		var time = timeStamp();
 		console.log(time + " | MESSAGES Extension | >> Sending message <" + messageOnCreate + "> to extensionScript (" + appUrl + " , " + tabId + ")");
@@ -110,17 +112,14 @@ function displayingApp(tabId){
 	//                                         //
 	/////////////////////////////////////////////
 
+	removeShowMeApps();
+
+	for(var i = 0; i < schedulesTest.length; i++){
+		console.log("APPS IN ARRAY AFTER REMOVESHOWMEAPPS: " + schedulesTest[i]);
+	}
+
 	//when job duration is almost done (10 seconds before)
 	var timerPauseRequest = new Timer(function(){
-		var appReady = isAppReady(appsReady,schedulesTest[0][0]);
-
-		if(appReady === true){
-			nextAppUrl = schedulesTest[0][0];
-		}
-		else{
-			//jump to another app after x seconds !
-		}
-
 		//send onHideNotification to current application
 		var time = timeStamp();
 		console.log(time + " | MESSAGES Extension | >> Sending message <" + messageOnPauseRequest + "> to extensionScript (" + appUrl + " , " + tabId + ")");
@@ -129,6 +128,20 @@ function displayingApp(tabId){
 
 	//when job duration is done
 	var timerPause = new Timer(function() {
+		var appReady = isAppReady(appsReady,schedulesTest[0][0]);
+		console.log("APPS READYYYYYYYYYYYYY");
+		for(var i = 0; i < appsReady.length; i++){
+			console.log("APP: " + appsReady[i]);
+		}
+
+		nextAppUrl = schedulesTest[0][0];
+		/////////////////////////////////////////////////////////////////////////////// PROBLEM !!!!!
+		/*if(appReady === true){
+			nextAppUrl = schedulesTest[0][0];
+		}
+		else{
+			//jump to another app !!!
+		}*/
 
 		/////////////////////////////////////////////
 		//       Open next app on active tab       //
@@ -183,6 +196,25 @@ function main(){
 					console.log("APPS IN ARRAY: " + schedulesTest[i]);
 				}
 
+				var currentApplicationUrl = tabIdToURL[currentTabId];
+				var currentApp = getAppByUrl(currentApplicationUrl);
+
+				var newApp = getAppByUrl(url);
+				newApp.push("showMe");
+				var compare = isPriorityBigger(currentApp,newApp);
+
+				//if both apps have the same priority
+				if(compare === false){
+					//current app can finish to run normally and "showMe" app is launched next
+					schedulesTest.unshift(newApp);
+					for(var i = 0; i < schedulesTest.length; i++){
+						console.log("APPS IN ARRAY AFTER COMPARE: " + schedulesTest[i]);
+					}
+				}
+				else{
+					console.log("bigger!");
+				}
+
 				//compare priority levels from current app and "showMe()" app
 				//if current is bigger, keeps running and when done "showMe()" app is shown
 
@@ -199,9 +231,11 @@ function main(){
 
 			case "loaded":
 				if(firstRun === true){
-					firstRun = false;
-					console.log("SCHEDULER | First run");
-					displayingApp(id);
+					if(url === schedulesTest[0][0]){
+						firstRun = false;
+						console.log("SCHEDULER | First run");
+						displayingApp(id);
+					}
 				}
 				else{
 					console.log("APPS | Adding " + url + " to array appsReady !");
@@ -376,6 +410,42 @@ function loadBackgroundApps(arrayOfApps){
 
 	return $.when.apply($, promises).promise();
 }	
+
+function getAppByUrl(appUrl){
+	var app;
+	for(var i = 0; i < schedulesTest.length; i++){
+		if(schedulesTest[i][0] === appUrl){
+			app = schedulesTest[i];
+		}
+	}		
+
+	//application was not found on schedulesTest, search background array
+	if(typeof app === 'undefined'){
+    	for(var i = 0; i < backgroundAppTest.length; i++){
+    		if(backgroundAppTest[i][0] === appUrl)
+    			app = backgroundAppTest[i];
+    	}
+ 	};
+
+	return app;
+}
+
+function isPriorityBigger(newApp,currentApp){
+	if(newApp[2] > currentApp[2])
+		return true;
+	else
+		return false;
+}
+
+function removeShowMeApps(){
+	for(var i = 0; i < schedulesTest.length; i++){
+		if(schedulesTest[i][3] === "showMe"){
+			schedulesTest[i].pop();
+			console.log("APPS | Application " + schedulesTest[i][0] + " removed from array of apps!");
+			schedulesTest.splice(i, 1);
+		}
+	}
+}
 
 /////////////////////////////////////////////
 //               TIMER.JS                  //

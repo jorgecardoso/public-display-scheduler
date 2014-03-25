@@ -3,7 +3,7 @@ function onCreate(callback){
 	var time = timeStamp();
 	console.log(time + " | LIFECYCLE | onCreate of " + url + " is running...");
 	document.getElementById("onCreateText").value='onCreate';
-		
+
 	setTimeout(function(){
 		callback();
 	},3000);
@@ -30,7 +30,7 @@ function onPauseRequest(callback){
 	console.log("LIFECYCLE | onPauseRequest of " + url + " is running...");
 	document.getElementById("onPauseRequestText").value='onPauseRequest';
 	
-	time = 0;
+	time = 5;
 
 	setTimeout(function(){
 		callback();

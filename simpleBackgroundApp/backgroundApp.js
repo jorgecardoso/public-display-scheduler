@@ -34,10 +34,6 @@ function onLoad(callback){
 	setTimeout(function(){
 		callback();
 	},3000);
-
-	setTimeout(function(){
-		showMe();
-	},10000);
 }
 
 function onResume(){

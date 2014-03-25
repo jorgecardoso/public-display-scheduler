@@ -1,10 +1,10 @@
 {
   "manifest_version": 2,
-  "name": "19_03",
+  "name": "25_03",
   "version": "1.0",
   
   "browser_action": {
-    "default_title": "19_03",
+    "default_title": "25_03",
     "default_popup": "popup.html"  
   },
 

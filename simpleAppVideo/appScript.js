@@ -78,6 +78,11 @@ function onDestroyAux(callback){
 	onDestroy(callback);
 }
 
+function showMe(){
+	var showMeEvt = new CustomEvent('showMe');
+	document.dispatchEvent(showMeEvt);
+}
+
 //create custom event with argument "state" and "url"
 function createEventWithState(state){
   //console.log("appScript is creating an event...");
@@ -163,4 +168,7 @@ $(document).ready(function() {
 	
 	window.addEventListener("message", messageReceived);
 	url = document.URL;
+
+	//execute onCreate on startup
+	//onCreateAux(sendMessageToExtensionScript);
 });   

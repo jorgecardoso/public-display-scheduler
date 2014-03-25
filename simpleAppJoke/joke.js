@@ -24,7 +24,7 @@ function functionWithData(data) {
 function onCreate(callback){
 	var time = timeStamp();
 	console.log(time + " | LIFECYCLE | onCreate of " + url + " is running...");
-		
+
 	callback();
 }
 
