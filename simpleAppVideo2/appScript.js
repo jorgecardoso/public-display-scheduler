@@ -83,11 +83,6 @@ function showMe(){
 	document.dispatchEvent(showMeEvt);
 }
 
-function releaseMe(){
-	var releaseMeEvt = new CustomEvent('releaseMe');
-	document.dispatchEvent(releaseMeEvt);
-}
-
 //create custom event with argument "state" and "url"
 function createEventWithState(state){
   //console.log("appScript is creating an event...");

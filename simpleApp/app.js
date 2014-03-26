@@ -22,15 +22,14 @@ function onResume(){
 	console.log("LIFECYCLE | onResume of " + url + " is running...");
 	setTimeout(function(){
 			document.getElementById("onResumeText").value='onResume';
-	},3000);
+			releaseMe();
+	},6000);
 }
 
 //calculates if more time is needed to display all jokes
 function onPauseRequest(callback){
 	console.log("LIFECYCLE | onPauseRequest of " + url + " is running...");
 	document.getElementById("onPauseRequestText").value='onPauseRequest';
-	
-	time = 5;
 
 	setTimeout(function(){
 		callback();

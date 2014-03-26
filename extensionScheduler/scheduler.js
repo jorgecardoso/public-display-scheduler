@@ -6,6 +6,9 @@ var currentTabId = -1;
 var hideNotificationTime = 10000;
 var firstRun = true;
 var options = "options.html";
+var giveMeMoreTimeFunc;
+var timerPauseRequest;
+var timerPause;
 
 var code = 'window.location.reload();';
 var messageOnCreate = "onCreate";
@@ -17,7 +20,7 @@ var messageOnUnload = "onUnload";
 var messageOnDestroy = "onDestroy";
 
 //hardcoded schedules
-var schedulesTest = [["http://localhost/05_03_simpleApp/", 30, 2],["http://localhost/05_03_simpleAppVideo/", 30, 2],["http://localhost/05_03_simpleAppJoke/", 30, 2]];
+var schedulesTest = [["http://localhost/05_03_simpleApp/", 30, 2],["http://localhost/05_03_simpleAppVideo2/", 30, 2],["http://localhost/05_03_simpleAppJoke/", 30, 2]];
 
 var backgroundAppTest = [["http://localhost/05_03_simpleBackgroundApp/", 10, 2],["http://localhost/05_03_simpleBackgroundApp2/", 10, 2]];
 
@@ -114,12 +117,34 @@ function displayingApp(tabId){
 
 	removeShowMeApps();
 
+	//handles extra time on onPauseRequest callback
+	giveMeMoreTimeFunc = function moreTimeFunc(extraTime){
+		//var receivedMessage = message.data;
+		//var extraTime = receivedMessage.timeField;
+		console.log("Received message asking for more time: " + extraTime);
+		//pause current timeout
+		console.log("Pausing current job...");
+		var paused = timerPause.pause();
+		
+		//if timer is paused			
+		if(paused === 1){
+			//resume job after extraTime is elapsed
+			setTimeout(function(){
+				timerPause.resume();
+				//removes listener [not working correctly!]
+				//console.log("-> Removing listener <-");
+				console.log("Resuming job...");
+				//window.removeEventListener('message', moreTimeFunc);
+			},extraTime);
+		}
+	}
+
 	for(var i = 0; i < schedulesTest.length; i++){
 		console.log("APPS IN ARRAY AFTER REMOVESHOWMEAPPS: " + schedulesTest[i]);
 	}
 
 	//when job duration is almost done (10 seconds before)
-	var timerPauseRequest = new Timer(function(){
+	timerPauseRequest = new Timer(function(){
 		//send onHideNotification to current application
 		var time = timeStamp();
 		console.log(time + " | MESSAGES Extension | >> Sending message <" + messageOnPauseRequest + "> to extensionScript (" + appUrl + " , " + tabId + ")");
@@ -127,7 +152,7 @@ function displayingApp(tabId){
 	}, (appDuration * 1000) - hideNotificationTime);
 
 	//when job duration is done
-	var timerPause = new Timer(function() {
+	timerPause = new Timer(function() {
 		var appReady = isAppReady(appsReady,schedulesTest[0][0]);
 		console.log("APPS READYYYYYYYYYYYYY");
 		for(var i = 0; i < appsReady.length; i++){
@@ -206,19 +231,47 @@ function main(){
 				//if both apps have the same priority
 				if(compare === false){
 					//current app can finish to run normally and "showMe" app is launched next
-					schedulesTest.unshift(newApp);
+					addShowMeApp(newApp);
+
 					for(var i = 0; i < schedulesTest.length; i++){
 						console.log("APPS IN ARRAY AFTER COMPARE: " + schedulesTest[i]);
 					}
 				}
 				else{
+					//else pauses current application and starts running immediatly
 					console.log("bigger!");
 				}
+			break;
 
-				//compare priority levels from current app and "showMe()" app
-				//if current is bigger, keeps running and when done "showMe()" app is shown
+			case "releaseMe":
+				timerPauseRequest.removeTimer();
+				timerPause.removeTimer();
+				var appReady = isAppReady(appsReady,schedulesTest[0][0]);
+				console.log("APPS READYYYYYYYYYYYYY");
+				for(var i = 0; i < appsReady.length; i++){
+					console.log("APP: " + appsReady[i]);
+				}
 
-				//else pauses current application and starts running immediatly
+				nextAppUrl = schedulesTest[0][0];
+				/////////////////////////////////////////////////////////////////////////////// PROBLEM !!!!!
+				/*if(appReady === true){
+					nextAppUrl = schedulesTest[0][0];
+				}
+				else{
+					//jump to another app !!!
+				}*/
+
+				/////////////////////////////////////////////
+				//       Open next app on active tab       //
+
+				var nextAppId = getTabIdFromUrl(tabIdToURL, nextAppUrl);
+				displayingApp(nextAppId);
+				//                                         //
+				/////////////////////////////////////////////
+
+				//send onHide message to current app before removing it
+				chrome.tabs.sendMessage(id, {state: messageOnPause, url: url});
+				console.log("SENDING PAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUSE!!!!!!!!!!!!!!!");
 			break;
 
 			case "created":
@@ -246,11 +299,11 @@ function main(){
 
 			case "pauseReady":
 				if(message.time > 0){
-					console.log("APPS | Application " + url + " needs more " + message.time + " seconds !");
+					console.log("APPS | Application " + url + " needs " + message.time + " seconds more !");
 					var extraTime = message.time;
 					//seconds -> miliseconds
 					var extraTimeMiliseconds = extraTime * 1000;
-					//giveMeMoreTimeFunc(extraTimeMiliseconds);
+					giveMeMoreTimeFunc(extraTimeMiliseconds);
 				}
 			break;
 
@@ -437,14 +490,68 @@ function isPriorityBigger(newApp,currentApp){
 		return false;
 }
 
-function removeShowMeApps(){
+function removeShowMeApps2(){
+	console.log("DELETING IT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 	for(var i = 0; i < schedulesTest.length; i++){
 		if(schedulesTest[i][3] === "showMe"){
+			console.log("OH YEAH ! THAT'S A SHOW ME APP!!!!!!!!!!!!!!!!");
 			schedulesTest[i].pop();
 			console.log("APPS | Application " + schedulesTest[i][0] + " removed from array of apps!");
 			schedulesTest.splice(i, 1);
+			break;
 		}
 	}
+}
+
+function removeShowMeApps(){
+	var lastApp = schedulesTest[schedulesTest.length - 1];
+	console.log("LAST APPPPPPPPPPPP: " + lastApp);
+	//if previous application was a "showMe" app, remove it
+	if(lastApp[3] === "showMe")
+		schedulesTest.pop();
+}
+
+var flag;
+
+function addShowMeApp(newApp){
+	//if there isn't any showMe application waiting
+	if(typeof schedulesTest[0][3] === 'undefined'){
+		console.log("NOT A SHOW ME APPPPPP!!!!!!!!!!!!!");
+		schedulesTest.unshift(newApp);
+	}
+	else{
+		var number = getAllShowMeApps(schedulesTest);
+		flag = false;
+
+		for(var i = 0; i < number; i++){
+			console.log("INSIDE FOR!!!!!!!!!!!!!!!!!!!!!!!");
+			var app = schedulesTest[i];
+			var compare = isPriorityBigger(newApp,app);
+
+			if(compare === "true"){
+				flag = true;
+				console.log("COMPARE TRUE!!!!!!!!!");
+				schedulesTest.splice(i, 0, newApp);
+				break;
+			}
+		}
+
+		if(flag === false){
+			console.log("LAST ITERATION!!!!!!!!!!!!!!!!!!!!");
+			schedulesTest.splice(number,0,newApp);
+		}
+	}
+}
+
+function getAllShowMeApps(arrayOfApps){
+	var result = 0;
+
+	for(var i = 0; i < arrayOfApps.length; i++){
+		if(arrayOfApps[i][3] === "showMe")
+			result++;
+	}
+
+	return result;
 }
 
 /////////////////////////////////////////////
@@ -465,6 +572,10 @@ function Timer(callback, delay) {
         start = new Date();
         timerId = window.setTimeout(callback, remaining);
     };
+
+    this.removeTimer = function(){
+    	window.clearTimeout(timerId);
+    }
 
     this.resume();
 }

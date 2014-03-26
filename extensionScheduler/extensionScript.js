@@ -28,9 +28,14 @@ var time = timeStamp();
 console.log("TIME:" + time);
 
 //listen for showMe message from application
-document.addEventListener('showMe',function(source){
+document.addEventListener('showMe', function(source){
 	console.log(time + " | MESSAGES ExtensionScript | << Receiving message showMe from appScript of ");
 	chrome.extension.sendMessage({state : "showMe"});
+})
+
+document.addEventListener('releaseMe', function(source){
+	console.log(time + " | MESSAGES ExtensionScript | << Receiving message releaseMe from appScript of ");
+	chrome.extension.sendMessage({state : "releaseMe"});
 })
 
 //listen for messages coming from appScript.js  
