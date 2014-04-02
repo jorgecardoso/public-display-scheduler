@@ -66,10 +66,9 @@ function onPauseAux(callback){
 	onPause(callback);
 }
 
-function onUnloadAux(callback){
+function onUnloadAux(){
 	console.log("LIFECYCLE | onUnloadAux " + url + " is running...");
-	state = "createdFromAppScript";
-	onUnload(callback);
+	onUnload();
 }
 
 function onDestroyAux(callback){
@@ -81,6 +80,11 @@ function onDestroyAux(callback){
 function showMe(){
 	var showMeEvt = new CustomEvent('showMe');
 	document.dispatchEvent(showMeEvt);
+}
+
+function releaseMe(){
+	var releaseMeEvt = new CustomEvent('releaseMe');
+	document.dispatchEvent(releaseMeEvt);
 }
 
 //create custom event with argument "state" and "url"
@@ -164,11 +168,8 @@ var time;
 //main()
 $(document).ready(function() {
 	console.log( "appScript.js is running..."); 
+
 	//listen messages from extensionScript.js
-	
 	window.addEventListener("message", messageReceived);
 	url = document.URL;
-
-	//execute onCreate on startup
-	//onCreateAux(sendMessageToExtensionScript);
 });   

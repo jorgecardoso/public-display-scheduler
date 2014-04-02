@@ -12,6 +12,7 @@ var ids = ["Jwj5KhF1Hhk","9ZVwJfkM0Eg","brLuH74fjlw","wZqE2wm2skU","wCkerYMffMo"
 var id;
 var videoDuration;
 var secondsEllapsed = 0;
+var appStopped = 0;
 
 
 //get a random number between min and max
@@ -34,6 +35,10 @@ function pause() {
     swfobject.getObjectById('randomVideo').pauseVideo();
 }
 
+function resume(){
+	swfobject.getObjectById('randomVideo').resumeVideo();
+}
+
 
 //auxiliar function to count ellapsed time (visible on console)
 function countingTime(){
@@ -49,6 +54,15 @@ function onCreate(callback){
 
 function onLoad(callback){
 	console.log("LIFECYCLE | onLoad of " + document.URL + " is running...");
+
+	var c = document.getElementById("randomVideo");
+	
+	//if div "randomVideo" doesn't exist, create it
+	if (c === null) {
+		var d = document.createElement("div");
+		d.setAttribute("id", "randomVideo");
+		document.getElementById("content-container").appendChild(d);
+	}
 	
 	var sizeIds = ids.length;
 	//calculates a random number between 1 and sizeWords-1 
@@ -66,15 +80,21 @@ function onLoad(callback){
 }
 
 function onResume(){
-	console.log("LIFECYCLE | onResume of " + document.URL + " is running...");
-	console.log("RandomVideo is displaying...");
+	if(appStopped === 0){
+		console.log("LIFECYCLE | onResume of " + document.URL + " is running...");
+		console.log("RandomVideo is displaying...");
 
-	//start counting time
-	setInterval(countingTime,1000);
+		//start counting time
+		setInterval(countingTime,1000);
 
-	//starts playing random video
-	var params = { allowScriptAccess: "always" };
-	swfobject.embedSWF("http://www.youtube.com/e/" + id + "?enablejsapi=1&playerapiid=ytplayer?rel=0&autoplay=1", "randomVideo", "600", "240", "9.0.0",null, null, params);
+		//starts playing random video
+		var params = { allowScriptAccess: "always" };
+		swfobject.embedSWF("http://www.youtube.com/e/" + id + "?enablejsapi=1&playerapiid=ytplayer?rel=0&autoplay=1", 
+			"randomVideo", "600", "240", "9.0.0",null, null, params);
+	}
+	else{
+		resume();
+	}	
 }
 
 function onPauseRequest(callback){
@@ -102,6 +122,7 @@ function onPauseRequest(callback){
 
 function onPause(callback){
 	console.log("LIFECYCLE | onPause of " + document.URL + " is running...");
+	appStopped = 1;
 
 	//pause video
 	pause();
@@ -109,10 +130,12 @@ function onPause(callback){
 	callback();
 }
 
-function onUnload(callback){
+function onUnload(){
 	console.log("LIFECYCLE | onUnload of " + document.URL + " is running...");
-	//clear all variables
-	callback();
+	appStopped = 0;
+
+	//clear swfobject
+	swfobject.removeSWF("randomVideo");
 }
 
 function onDestroy(callback){

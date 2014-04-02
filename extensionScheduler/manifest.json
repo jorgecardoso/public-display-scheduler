@@ -1,15 +1,15 @@
 {
   "manifest_version": 2,
-  "name": "25_03",
+  "name": "02_04",
   "version": "1.0",
   
   "browser_action": {
-    "default_title": "25_03",
+    "default_title": "02_04",
     "default_popup": "popup.html"  
   },
 
   "background": {
-    "scripts": ["scheduler.js","jquery.js"]
+    "scripts": ["scheduler.js","support.js","timer.js","jquery.js"]
   },
 
   "options_page": "options.html",

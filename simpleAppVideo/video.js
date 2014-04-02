@@ -32,7 +32,6 @@ function functionWithData(data) {
 };
 
 function pause() {
-	console.log("AQUIIIIIIIIIIIIIIIIIIIIII" + swfobject.getObjectById('randomVideo'));
     swfobject.getObjectById('randomVideo').pauseVideo();
 }
 
@@ -51,7 +50,8 @@ function onCreate(callback){
 
 function onLoad(callback){
 	console.log("LIFECYCLE | onLoad of " + document.URL + " is running...");
-		var sizeWords = words.length;
+	
+	var sizeWords = words.length;
 	//calculates a random number between 1 and sizeWords-1 (0 can never happen!!!!!)
 	randomNumber = getRandomInt(0,sizeWords-1);
 	//get word in that position	

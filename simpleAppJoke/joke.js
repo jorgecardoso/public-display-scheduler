@@ -24,7 +24,6 @@ function functionWithData(data) {
 function onCreate(callback){
 	var time = timeStamp();
 	console.log(time + " | LIFECYCLE | onCreate of " + url + " is running...");
-
 	callback();
 }
 
@@ -33,7 +32,7 @@ function onLoad(callback){
 
 	//calculates a random number between 1 and 5
 	randomNumber = Math.floor((Math.random()*5)+1);
-	console.log("Random number: " + randomNumber);
+	console.log("APPS | SimpleJoke | Random number: " + randomNumber);
 	
 	var url = 'http://api.icndb.com/jokes/random/' + randomNumber;
 	//get jokes from server
@@ -51,7 +50,7 @@ function onLoad(callback){
 			});
 		}
 		else{
-			//verify if array of jokes have correct data
+			//if everything is okay, send message to appScript
 			callback();
 		}		
 	});
@@ -78,17 +77,17 @@ function onResume(){
 //calculates if more time is needed to display all jokes
 function onPauseRequest(callback){
 	console.log("LIFECYCLE | onFinishRequest of " + url + " is running...");
-	console.log("Showed jokes: " + showedJokes);
-	console.log("Random number: " + randomNumber);
+	console.log("APPS | SimpleJoke | Showed jokes: " + showedJokes);
+	console.log("APPS | SimpleJoke | Random number: " + randomNumber);
 	
 	if(showedJokes < randomNumber){
 		//ask for more time to display all jokes
-		console.log("Need more time to display jokes!");
+		console.log("APPS | SimpleJoke | Need more time to display jokes!");
 		var remainingJokes = randomNumber - showedJokes;
-		console.log("Remaining jokes: " + remainingJokes);
+		console.log("APPS | SimpleJoke | Remaining jokes: " + remainingJokes);
 		time = (remainingJokes * jokeDuration)/1000;
 		time = time - 10000;
-		console.log("time: " + time);
+		console.log("APPS | SimpleJoke | Give me more: " + time);
 		callback();
 	}
 	else{
@@ -99,7 +98,6 @@ function onPauseRequest(callback){
 
 function onPause(callback){
 	console.log("LIFECYCLE | onPause of " + url + " is running...");
-	//clear all variables
 
 	setTimeout(function(){
 		callback();
@@ -108,18 +106,18 @@ function onPause(callback){
 
 function onUnload(callback){
 	console.log("LIFECYCLE | onUnload of " + url + " is running...");
-	//clear all variables
+	
+	//clear div with all jokes
+	document.getElementById('randomJoke').innerHTML = "";
+
 	setTimeout(function(){
 		callback();
 	},3000);
 
-	//saves jokes obtained from the server to use if anything goes wrong next time
-
-	//callback();
+	//save jokes obtained from the server to use if anything goes wrong next time
 }
 
 function onDestroy(callback){
 	console.log("LIFECYCLE | onDestroy of " + url + " is running...");
-	//clear all variables
 	callback();
 }
