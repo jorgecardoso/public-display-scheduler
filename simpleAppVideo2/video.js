@@ -10,9 +10,10 @@ var description;
 var videoID = [];
 var ids = ["Jwj5KhF1Hhk","9ZVwJfkM0Eg","brLuH74fjlw","wZqE2wm2skU","wCkerYMffMo"];
 var id;
-var videoDuration;
+var videoDuration = 0;
 var secondsEllapsed = 0;
 var appStopped = 0;
+var secondsTimer = null;
 
 
 //get a random number between min and max
@@ -50,6 +51,9 @@ function countingTime(){
 function onCreate(callback){
 	console.log("LIFECYCLE | onCreate of " + document.URL + " is running...");
 	callback();
+	setTimeout(function(){
+		showMe();
+	},40000);
 }
 
 function onLoad(callback){
@@ -84,8 +88,14 @@ function onResume(){
 		console.log("LIFECYCLE | onResume of " + document.URL + " is running...");
 		console.log("RandomVideo is displaying...");
 
+		if(secondsTimer != null){
+			console.log("CLEARINGGGGGGGGGGGGGGGGGGGGGGG TIMER !");
+			clearInterval(secondsTimer);
+			secondsEllapsed = 0;
+		}
+
 		//start counting time
-		setInterval(countingTime,1000);
+		secondsTimer = setInterval(countingTime,1000);
 
 		//starts playing random video
 		var params = { allowScriptAccess: "always" };

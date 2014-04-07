@@ -9,10 +9,8 @@ function printArray(array){
 function updateSchedule(schedule){
 	//if previous app was a "showMe" app
 	var previousApp = schedule[schedule.length-1];
-	if(previousApp.showMe === true){
-		//remove it from the schedule
+	if(previousApp.showMe === true)
 		schedule.pop();
-	}
 	
 	//get first application of the list
 	var currentApp = schedule[0];
@@ -70,10 +68,13 @@ function sendOnCreateMsg(tabId,appUrl){
 }
 
 function getAppFromTabId(apps,tabId){
+	var app;
 	var appInfo = tabIdToAppInfo[tabId];
 	for(var i = 0; i < apps.length; i++){
-		if(i === appInfo[0] && apps[i].url === appInfo[1])
-			return apps[i];
+		if(i === appInfo[0] && apps[i].url === appInfo[1]){
+			app = apps[i];
+			return app;
+		}
 	}
 }
 
@@ -146,22 +147,21 @@ function addShowMeApp(newApp){
 	}
 	else{
 		var number = getAllShowMeApps(schedule);
-		flag = false;
 
 		for(var i = 0; i < number; i++){
 			console.log("INSIDE FOR!!!!!!!!!!!!!!!!!!!!!!!");
 			var app = schedule[i];
 			var compare = isPriorityBigger(newApp,app);
 
-			if(compare === "true"){
-				flag = true;
+			if(compare === true){
+				addShowMeAppFlag = true;
 				console.log("COMPARE TRUE!!!!!!!!!");
 				schedule.splice(i, 0, newApp);
 				break;
 			}
 		}
 
-		if(flag === false){
+		if(addShowMeAppFlag === false){
 			console.log("LAST ITERATION!!!!!!!!!!!!!!!!!!!!");
 			schedule.splice(number,0,newApp);
 		}

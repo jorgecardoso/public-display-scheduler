@@ -12,7 +12,7 @@ var messageOnDestroy = "onDestroy";
 var schedule; 
 var backgroundApps = [];
 var tabIdToAppInfo = {};
-var appsReady = [];
+var createdApps = [];
 var appDuration;
 var hideNotificationTime = 10000;
 var giveMeMoreTimeFunc;
@@ -22,6 +22,7 @@ var pausedApps = [];
 
 //flags
 var firstRunFlag = true;
+var addShowMeAppFlag = false;
 
 //hardcoded schedules
 var applications = [
@@ -57,7 +58,7 @@ var startScheduler = function starting(){
 
 	//get 1st application
 	var app = schedule[0];
-	console.log("SCHEDULER | Next app: " + app.url);
+	console.log("SCHEDULER | First application: " + app.url);
 
 	//open first app on a background tab
 	createApp(app,sendOnCreateMsg);
@@ -66,7 +67,7 @@ var startScheduler = function starting(){
 function loadApp(app){
 	console.log("SCHEDULER | Loading app " + app.url);
 
-	//get current application tab id
+	//get next application tab id
 	var tabId =  getTabIdFromAppId(tabIdToAppInfo, app.id);
 
 	/////////////////////////////////////////////////////////
@@ -139,32 +140,42 @@ function main(){
 
 		switch(state){
 			case "showMe":
+			console.log("APPS | Application " + url + " called SHOW ME !");
 			//get showMe application
 			var showMeApp = getAppFromTabId(applications,id);
-			showMeApp.showMe = true;
+			var showMeAppCopy = jQuery.extend({}, showMeApp);
+			showMeAppCopy.showMe = true;
 
 			//get current application
 			var currentApp = schedule[schedule.length-1];
 
-			//compares priorities of both apps
-			var compare = isPriorityBigger(currentApp,showMeApp);
-
-			//if both apps have the same priority
-			if(compare === false){
-				//current app can finish to run normally and "showMe" app is launched next
-				addShowMeApp(showMeApp);
-
-				console.log("PRINTING SCHEDULE AFTER ADDING SHOW ME APP!");
-				printArray(schedule);
+			//if showMe application is already running, ignore...
+			if(currentApp.id === showMeApp.id){
+				console.log("SCHEDULER | Application " + currentApp.url + " is already showing ! Ignore SHOW ME...");
 			}
+			//othwerwise, add showMe app to schedule
 			else{
-				//add current application to pausedApps array
-				pausedApps.push(currentApp);
+				//compares priorities of both apps
+				var compare = isPriorityBigger(currentApp,showMeAppCopy);
+				console.log("SCHEDULER | Comparing apps: " + compare);
 
-				timerPauseRequest.removeTimer();
-				timerPause.removeTimer();	
+				//if both apps have the same priority
+				if(compare === false){
+					//current app can finish to run normally and "showMe" app is launched next
+					addShowMeApp(showMeAppCopy);
 
-				loadApp(showMeApp);			
+					console.log("PRINTING SCHEDULE AFTER ADDING SHOW ME APP!");
+					printArray(schedule);
+				}
+				else{
+					//add current application to pausedApps array
+					pausedApps.push(currentApp);
+
+					timerPauseRequest.removeTimer();
+					timerPause.removeTimer();	
+
+					loadApp(showMeApp);			
+				}
 			}
 
 			break;
@@ -182,8 +193,8 @@ function main(){
 			case "created":
 
 				var app = getAppFromTabId(applications,id);
-				console.log("APPS | Adding " + app.url + " to array appsReady !");
-				appsReady.push(app);
+				console.log("APPS | Adding " + app.url + " to array createdApps !");
+				createdApps.push(app);
 
 				if(firstRunFlag === true){
 					if(url === schedule[0].url){
@@ -214,7 +225,8 @@ function main(){
 
 				//update schedule
 				updateSchedule(schedule);
-				console.log("UPDATED SCHEDULE");
+				var time = timeStamp();
+				console.log(time + " | UPDATED SCHEDULE");
 				printArray(schedule);
 
 				//when apps duration is almost done (10 seconds before)
