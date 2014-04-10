@@ -3,6 +3,8 @@
 
 <body>
 	<h1>Options</h1>
+	<h2>Add a new application</h2>
+
 	<form>
 		Application URL:
 		<input type="text" id="inputAppUrl" name="appUrl">
@@ -10,6 +12,14 @@
 		Application Duration:
 		<input type="text" id="inputAppDuration" name="appDuration">
 		<br>
+		Application Priority:
+		<input type="text" id="inputAppPriority" name="appPriority">
+		<br>
+		Is it a background application:
+		<select id="ddmBackgroundApp">
+		  <option value="true"> Yes </option>
+		  <option value="false"> No </option>
+		</select>
 	</form>
 	<button id="buttonAddApp">Add!</button>
 

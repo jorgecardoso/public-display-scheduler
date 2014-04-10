@@ -7,17 +7,27 @@ function printArray(array){
 }
 
 function updateSchedule(schedule){
-	//if previous app was a "showMe" app
-	var previousApp = schedule[schedule.length-1];
-	if(previousApp.showMe === true)
+	//if current app is a "showMe" app
+	var currentApp = schedule[schedule.length-1];
+	if(currentApp.showMe === true)
+		//delete uit from the schedule
 		schedule.pop();
 	
-	//get first application of the list
-	var currentApp = schedule[0];
+	//get first application of the list (next application to run)
+	var nextApp = schedule[0];
 	//removes it
 	schedule.shift();
 	//and push it to the end of the array of jobs
-	schedule.push(currentApp);
+	schedule.push(nextApp);
+}
+
+function updateSchedulePaused(schedule){
+	//get stopped application (last one)
+	var stoppedApp = schedule[schedule.length-1];
+	//remove it from schedule
+	schedule.pop();
+	//push it to the beginning of the schedule
+	schedule.unshift(stoppedApp);
 }
 
 //given an array of apps, returns an array with all regular applications
@@ -138,7 +148,17 @@ function isPriorityBigger(newApp,currentApp){
 		return false;
 }
 
+function isPrioritySmaller(newApp,currentApp){
+	if(newApp.priority < currentApp.priority)
+		return false;
+	else
+		//if priority is bigger or equal, returns false
+		return true;
+}
+
 function addShowMeApp(newApp){
+	addShowMeAppFlag = false;
+
 	//if there isn't any showMe application waiting
 	if(schedule[0].showMe === false){
 		console.log("SHOW ME | There isn't any showMe apps waiting !");
@@ -149,22 +169,21 @@ function addShowMeApp(newApp){
 		var number = getAllShowMeApps(schedule);
 
 		for(var i = 0; i < number; i++){
-			console.log("INSIDE FOR!!!!!!!!!!!!!!!!!!!!!!!");
 			var app = schedule[i];
-			var compare = isPriorityBigger(newApp,app);
-
-			if(compare === true){
+			var compare = isPrioritySmaller(newApp,app);	
+			//if showMe app priority is smaller than the next showMe app waiting
+			if(compare === false){
 				addShowMeAppFlag = true;
-				console.log("COMPARE TRUE!!!!!!!!!");
-				schedule.splice(i, 0, newApp);
+				//add new showMe app to the top of the list
+				schedule.splice(i,0,newApp);
 				break;
-			}
+			}	
 		}
 
 		if(addShowMeAppFlag === false){
 			console.log("LAST ITERATION!!!!!!!!!!!!!!!!!!!!");
 			schedule.splice(number,0,newApp);
-		}
+		}	
 	}
 }
 
@@ -174,6 +193,18 @@ function getAllShowMeApps(schedule){
 	for(var i = 0; i < schedule.length; i++){
 		if(schedule[i].showMe === true)
 			result++;
+	}
+
+	return result;
+}
+
+function checkIfPaused(app){
+	var result = false;
+	for(var i = 0; i < schedule.length; i++){
+		if(schedule[i].paused === true){
+			if(schedule[i].id === app.id)
+				result = true;
+		}
 	}
 
 	return result;
