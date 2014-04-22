@@ -11,10 +11,10 @@ function showMeTimeout(){
 
 	setTimeout(function(){
 		showMe();
-	},80000);
+	},10000);
 }
 
-showMeTimeout();
+//showMeTimeout();
 
 //lifecycle functions
 function onCreate(callback){

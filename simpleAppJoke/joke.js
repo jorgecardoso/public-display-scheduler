@@ -5,42 +5,62 @@ var i = 0;
 var jokeDuration = 10000;
 var showedJokes = 0;
 var randomNumber;
+var displayInterval;
+var numberOfJokes = 5;
+var appStopped = 0; 
 
 //process data received from the server
 function functionWithData(data) {
-	var deferred = $.Deferred();
-	//push jokes to array
-	while (counter < randomNumber) {
-		console.log("Adding jokes to array...");
-  		jokes.push(data.value[counter].joke);
-  		counter++;
-	}	
+	if(data === undefined){
+		console.log("ERROR | Couldn't get jokes from server !");
+		releaseMe();
+	}
+	else{
+		var deferred = $.Deferred();
+		//push received jokes to array
+		while (counter < randomNumber) {
+			console.log("Adding jokes to array...");
+	  		jokes.push(data.value[counter].joke);
+	  		counter++;
+		}	
 
-	deferred.resolve();
-	return deferred.promise();
+		deferred.resolve();
+		return deferred.promise();
+	}
 };
+
+function clearBox(elementID)
+{
+    document.getElementById(elementID).innerHTML = "";
+}
 
 //lifecycle functions
 function onCreate(callback){
 	var time = timeStamp();
 	console.log(time + " | LIFECYCLE | onCreate of " + url + " is running...");
 	callback();
+
+	setTimeout(function(){
+		showMe();
+	},50000);
 }
 
 function onLoad(callback){
 	console.log("LIFECYCLE | onLoad of " + url + " is running...");
 
-	//calculates a random number between 1 and 5
-	randomNumber = Math.floor((Math.random()*5)+1);
+	//calculates a random number between 1 and "numberOfJokes"
+	randomNumber = Math.floor((Math.random()*numberOfJokes)+1);
 	console.log("APPS | SimpleJoke | Random number: " + randomNumber);
 	
 	var url = 'http://api.icndb.com/jokes/random/' + randomNumber;
+	
 	//get jokes from server
 	($.getJSON(url, functionWithData)).done(function(){
 		var sizeJokes = jokes.length;
 		//if any error occurs and no jokes are available
 		if(sizeJokes === 0){
-			console.log("Getting jokes from server again...");
+			console.log("Apps | Getting jokes from server again...");
+
 			//try to get jokes from server again
 			var url = 'http://api.icndb.com/jokes/random/' + randomNumber;
 			$.when($.getJSON(url, functionWithData)).then(function(){
@@ -50,7 +70,7 @@ function onLoad(callback){
 			});
 		}
 		else{
-			//if everything is okay, send message to appScript
+			//if everything is okay
 			callback();
 		}		
 	});
@@ -59,15 +79,29 @@ function onLoad(callback){
 function onResume(){
 	console.log("LIFECYCLE | onResume of " + url + " is running...");
 	
-	$('#randomJoke').append(jokes[counter - 1] + "</br>");
-	counter--;
-	showedJokes++;
+	if(appStopped === 0){
+		//add first joke to div
+		document.getElementById('randomJoke').innerHTML = jokes[counter-1];
+
+		//and show it
+	    $('#randomJoke').css('visibility','visible').hide().fadeIn('slow');
+
+		counter--;
+		showedJokes++;
+	}
     
-    //display jokes one by one every "jokeDuration" seconds
-    var displayInterval = setInterval(function() {
+    //display remaining jokes one by one every "jokeDuration" seconds
+    displayInterval = setInterval(function() {
     	i++;
       	if (i <= randomNumber - 1) {
-        	$('#randomJoke').append(jokes[counter - 1] + "</br>");
+      		//clear previous joke
+      		clearBox('randomJoke');
+
+      		//update box with new joke
+      		document.getElementById('randomJoke').innerHTML = jokes[counter-1];
+
+      		//and show it
+      		$('#randomJoke').css('visibility','visible').hide().fadeIn('slow');
         	showedJokes++;
         	counter--;
      	}
@@ -86,8 +120,13 @@ function onPauseRequest(callback){
 		var remainingJokes = randomNumber - showedJokes;
 		console.log("APPS | SimpleJoke | Remaining jokes: " + remainingJokes);
 		time = (remainingJokes * jokeDuration)/1000;
-		time = time - 10000;
+		//time = time - 10000;
 		console.log("APPS | SimpleJoke | Give me more: " + time);
+
+		if(appStopped === 1){
+			time = time + jokeDuration/1000;
+		}
+
 		callback();
 	}
 	else{
@@ -99,9 +138,10 @@ function onPauseRequest(callback){
 function onPause(callback){
 	console.log("LIFECYCLE | onPause of " + url + " is running...");
 
-	setTimeout(function(){
-		callback();
-	},3000);
+	window.clearInterval(displayInterval);
+	appStopped = 1;
+
+	callback();
 }
 
 function onUnload(callback){
@@ -110,11 +150,7 @@ function onUnload(callback){
 	//clear div with all jokes
 	document.getElementById('randomJoke').innerHTML = "";
 
-	setTimeout(function(){
-		callback();
-	},3000);
-
-	//save jokes obtained from the server to use if anything goes wrong next time
+	appStopped = 0;
 }
 
 function onDestroy(callback){

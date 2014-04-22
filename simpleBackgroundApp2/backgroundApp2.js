@@ -10,9 +10,7 @@ var randomNumber;
 function onCreate(callback){
 	var time = timeStamp();
 	console.log(time + " | LIFECYCLE | onCreate of " + url + " is running...");
-	setTimeout(function(){
-		callback();
-	},3000);
+	callback();
 }
 
 function onLoad(callback){

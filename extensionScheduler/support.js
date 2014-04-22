@@ -117,7 +117,7 @@ function activateBackgroundTab(tabId,url){
 	chrome.tabs.update(tabId, {active: true}, function(tab){
 		if(tab.status === "complete"){
 			var time = timeStamp();
-			console.log(time + " | MESSAGES Extension | >> Sending message <" + messageOnResume + "> to extensionScript of " + url);
+			console.log(time + " | MESSAGES " + url + " | >> Sending message " + messageOnResume);
 	      	chrome.tabs.sendMessage(tabId,{state : messageOnResume, url: url});
 		}
 	});
@@ -181,7 +181,6 @@ function addShowMeApp(newApp){
 		}
 
 		if(addShowMeAppFlag === false){
-			console.log("LAST ITERATION!!!!!!!!!!!!!!!!!!!!");
 			schedule.splice(number,0,newApp);
 		}	
 	}
@@ -208,6 +207,52 @@ function checkIfPaused(app){
 	}
 
 	return result;
+}
+
+function getTime(){
+	var time = new Date().getTime();
+	return time;
+}
+
+function addStartTimeToHash(appId,startTime){	
+	var airtimeValue = [];	
+
+	airtimeValue.push(appId);
+	airtimeValue.push(startTime);
+
+	for(var i = 0; i < appsAirtime.length; i++){
+		if(appsAirtime[i][0] === appId)
+			appsAirtime.splice(i, 1);
+	}
+
+	appsAirtime.push(airtimeValue);
+}
+
+function getLoadedTime(times,id){
+	var time;
+
+	for(var i = 0; i < times.length; i++){
+		var time = times[i];
+		if(time[0] === id){
+			time = time[1];
+		}
+	}
+
+	return time;
+}
+
+function getAppAirtime(times,id){
+	var airtime;
+
+	for(var i = 0; i < times.length; i++){
+		var time = times[i];
+		if(time[0] === id){
+			var nextAppLoadedTime = times[i+1][1];
+			airtime = nextAppLoadedTime - times[i][1];
+		}
+	}
+
+	return airtime;
 }
 
 function timeStamp() {

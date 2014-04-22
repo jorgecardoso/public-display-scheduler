@@ -12,14 +12,21 @@ var messageOnDestroy = "onDestroy";
 var schedule; 
 var backgroundApps = [];
 var tabIdToAppInfo = {};
+var appsAirtime = [];
 var createdApps = [];
 var appDuration;
+var appDurationRemainder;
 var hideNotificationTime = 10000;
 var giveMeMoreTimeFunc;
+var giveMeMoreTimeTimer;
 var timerPauseRequest;
 var timerPause;
 var pausedApps = [];
 var options = "options.html";
+var startTime;
+var pausedTime;
+var extraTime;
+var extraTimeMiliseconds;
 
 //flags
 var firstRunFlag = true;
@@ -28,11 +35,11 @@ var pausedFlag = false;
 
 //hardcoded schedules
 var applications = [
-{id: 0, url: "http://localhost/05_03_simpleAppVideo2/", duration: 30, priority: 3, background: false, showMe: false, paused: false},
-{id: 1, url: "http://localhost/05_03_simpleBackgroundApp2/", duration: 15, priority: 4, background: true, showMe: false, paused: false},
-{id: 2, url: "http://localhost/05_03_simpleAppJoke/", duration: 30, priority: 3, background: false, showMe: false, paused: false},
-{id: 3, url:"http://localhost/05_03_simpleBackgroundApp/", duration: 10, priority: 3, background: true, showMe: false, paused: false},
-{id: 4, url: "http://localhost/05_03_simpleBackgroundApp2/", duration: 15, priority: 4, background: true, showMe: false, paused: false},
+{id: 0, url: "http://localhost/05_03_simpleAppJoke/", duration: 15, priority: 2, background: false, showMe: false, paused: false, opr: false},
+{id: 1, url: "http://localhost/05_03_simpleBackgroundApp2/", duration: 15, priority: 1, background: true, showMe: false, paused: false, opr: false},
+{id: 2, url: "http://localhost/05_03_simpleAppVideo2/", duration: 30, priority: 3, background: false, showMe: false, paused: false, opr: false},
+{id: 3, url:"http://localhost/05_03_simpleBackgroundApp/", duration: 10, priority: 3, background: true, showMe: false, paused: false, opr: false},
+{id: 4, url: "http://localhost/05_03_simpleApp/", duration: 30, priority: 3, background: false, showMe: false, paused: false, opr: false},
 ];
 
 var openOptions = function optionsPage(){
@@ -65,7 +72,7 @@ var startScheduler = function starting(){
 
 	//get initial schedule with all regular apps
 	schedule = initialSchedule(applications);
-	console.log("INITIAL SCHEDULE");
+	console.log("SCHEDULE | INITIAL SCHEDULE");
 	printArray(schedule);
 
 	//load all background apps in inactive tabs
@@ -100,26 +107,26 @@ function loadApp(app){
 
 	//send message onLoad
 	var time = timeStamp();
-   	console.log(time + " | MESSAGES Extension | >> Sending message <" + messageOnLoad + "> to extensionScript (" + app.url + " , " + tabId + ")");
+   	console.log(time + " | MESSAGES " + app.url + " | >> Sending <" + messageOnLoad + ">");
    	chrome.tabs.sendMessage(tabId, {state: messageOnLoad, url: app.url});
 
    	//handles extra time on onPauseRequest callback
 	giveMeMoreTimeFunc = function moreTimeFunc(extraTime){
 		//var receivedMessage = message.data;
 		//var extraTime = receivedMessage.timeField;
-		console.log("Received message asking for more time: " + extraTime);
+		console.log("GIVE ME MORE TIME FUNC | Received message asking for more time: " + extraTime);
 		//pause current timeout
-		console.log("Pausing current job...");
+		console.log("GIVE ME MORE TIME FUNC | Pausing current job...");
 		var paused = timerPause.pause();
 		
 		//if timer is paused			
 		if(paused === 1){
 			//resume job after extraTime is elapsed
-			setTimeout(function(){
+			giveMeMoreTimeTimer = setTimeout(function(){
 				timerPause.resume();
 				//removes listener [not working correctly!]
 				//console.log("-> Removing listener <-");
-				console.log("Resuming job...");
+				console.log("GIVE ME MORE TIME FUNC | Resuming job...");
 				//window.removeEventListener('message', moreTimeFunc);
 			},extraTime);
 		}
@@ -127,49 +134,82 @@ function loadApp(app){
 }
 
 function resumeApp(app){
-	app.paused = false;
 	console.log("SCHEDULER | Resuming app " + app.url);
-	updateSchedule(schedule);
-	console.log("ANOTHER PRINTING GGGGGGGGGGGGGGGGGGGGGGGGGGG GGGGGGGGGGGGGGGGGGGGGGGGGG GGGGGGGGGGGGGGGG!");
-	printArray(schedule);
 
-	//get next application tab id
+	//resume paused application
 	var tabId =  getTabIdFromAppId(tabIdToAppInfo, app.id);
-
-	appDuration = app.duration;
-
 	activateBackgroundTab(tabId,app.url);
 
-	//when apps duration is almost done (10 seconds before)
-	timerPauseRequest = new Timer(function(){
+	var currentApp = schedule[schedule.length-1];
+	var currentTabId = getTabIdFromAppId(tabIdToAppInfo,currentApp.id);
+	//send onPause to current application 
+	var time = timeStamp();
+	console.log(time + " | MESSAGES " + currentApp.url + " | >> Sending <" + messageOnPause + ">");
+	chrome.tabs.sendMessage(currentTabId, {state: messageOnPause, url: currentApp.url});
 
-		//create next application
-		isTabCreated(schedule[0].url).done(function(data){
-			if(data === true){
-				console.log("TABS | Tab with url " + schedule[0].url + " is already created!");
+	app.paused = false;
+	updateSchedule(schedule);
+	console.log("SCHEDULE | UPDATED SCHEDULE !");
+	printArray(schedule);
+
+	console.log("APPS | DURATION OF APPLICATION " + app.url + ": " + app.duration);
+	var airTime = getAppAirtime(appsAirtime,app.id);
+	console.log("APPS | AIRTIME OF APPLICATION " + app.url + ": " + airTime);
+
+	if(schedule[schedule.length-1].opr != false){
+		console.log("EXTRA TIME ALREADY OCCURED !!!!!!!!!!!!!!!!!!!!! | EXTRA TIME VALUE: " + schedule[schedule.length-1].opr);
+		console.log("APPS | DURATION OF APP + EXTRA TIME: " + (app.duration * 1000 + schedule[schedule.length-1].opr));
+		appDurationRemainder = (app.duration * 1000 + schedule[schedule.length-1].opr) - airTime;
+
+		//when apps duration is done
+		timerPause = new Timer(function(){
+			if(schedule[0].paused === false){
+				//start loading next application
+				loadApp(schedule[0]);
 			}
 			else{
-				createApp(schedule[0],sendOnCreateMsg);
+				resumeApp(schedule[0]);
 			}
-		});
 
-		//send onPauseRequest to current application
-		var time = timeStamp();
-		console.log(time + " | MESSAGES Extension | >> Sending message <" + messageOnPauseRequest + "> to extensionScript (" + app.url + " , " + tabId + ")");
-		chrome.tabs.sendMessage(tabId, {state: messageOnPauseRequest, url: app.url});
-	}, (appDuration * 1000) - hideNotificationTime);
+		}, appDurationRemainder);
+	}
+	else{
+		console.log("EXTRA TIME DIDN'T OCCURED YET !!!!!!!!!!!!!!!!!!!");
+		appDurationRemainder = (app.duration * 1000) - airTime;
 
-	//when apps duration is done
-	timerPause = new Timer(function(){
-		if(schedule[0].paused === false){
-			//start loading next application
-			loadApp(schedule[0]);
-		}
-		else{
-			resumeApp(schedule[0]);
-		}
+		//when apps duration is almost done (10 seconds before)
+		timerPauseRequest = new Timer(function(){
 
-	}, (appDuration * 1000));
+			//create next application
+			isTabCreated(schedule[0].url).done(function(data){
+				if(data === true){
+					console.log("TABS | Tab with url " + schedule[0].url + " is already created!");
+				}
+				else{
+					createApp(schedule[0],sendOnCreateMsg);
+				}
+			});
+
+			//send onPauseRequest to current application
+			var time = timeStamp();
+			console.log(time + " | MESSAGES " + app.url + " | >> Sending message <" + messageOnPauseRequest + ">");
+			chrome.tabs.sendMessage(tabId, {state: messageOnPauseRequest, url: app.url});
+		}, appDurationRemainder - hideNotificationTime);
+
+		//when apps duration is done
+		timerPause = new Timer(function(){
+			if(schedule[0].paused === false){
+				//start loading next application
+				loadApp(schedule[0]);
+			}
+			else{
+				resumeApp(schedule[0]);
+			}
+
+		}, appDurationRemainder);
+	}
+
+	console.log("APPS | DURATION OF APPLICATION AFTER PAUSE: " + appDurationRemainder);
 
 }
 
@@ -199,10 +239,10 @@ function main(){
 		var nextApp;
 
 		if(state === "pauseReady"){
-			console.log(time + " | MESSAGES Extension | << Receiving message <" + state + " , " + message.time + "> from extensionScript(" + url + " , " + id + ")");
+			console.log(time + " | MESSAGES " + url + " | << Receiving <" + state + " , " + message.time + ">");
 		}
 		else{
-			console.log(time + " | MESSAGES Extension | << Receiving message <" + state + "> from extensionScript(" + url + " , " + id + ")");
+			console.log(time + " | MESSAGES " + url + " | << Receiving <" + state + ">");
 		}
 
 		switch(state){
@@ -235,7 +275,7 @@ function main(){
 					//current app can finish to run normally and "showMe" app is launched next
 					addShowMeApp(showMeAppCopy);
 
-					console.log("PRINTING SCHEDULE AFTER ADDING SHOW ME APP!");
+					console.log("SCHEDULE | UPDATED SCHEDULE AFTER ADDING SHOW ME APP!");
 					printArray(schedule);
 				}
 				else{
@@ -248,11 +288,12 @@ function main(){
 					updateSchedulePaused(schedule);
 					schedule.push(showMeAppCopy);
 
-					console.log(time + " | UPDATED SCHEDULE AFTER AN APPLICATION IS INTERRUPED !");
+					console.log(time + "| SCHEDULE | UPDATED SCHEDULE AFTER AN APPLICATION IS INTERRUPED !");
 					printArray(schedule);
 
 					timerPauseRequest.removeTimer();
 					timerPause.removeTimer();	
+					window.clearTimeout(giveMeMoreTimeTimer);
 
 					loadApp(showMeAppCopy);			
 				}
@@ -288,27 +329,41 @@ function main(){
 			case "loaded":
 				//activate next application
 				activateBackgroundTab(id,url);
+				var appId = getAppFromTabId(applications,id);
 
+				console.log("APPS | Getting start time of application " + appId.url);
+				startTime = getTime();
+
+				addStartTimeToHash(appId.id,startTime);
+
+				console.log("APPS | PRINTING APPS AIRTIME !");
+				printArray(appsAirtime);
+
+				//if application was interrupted
 				if(pausedFlag === true){
 					//current application is also the next application
 					currentApp = schedule[0];
 				}
 				else{
+					//otherwise, current application is the last application of the list
 					currentApp = schedule[schedule.length-1];
 				}
 
-				console.log("PREVIOUS APPLICATION: " + currentApp.url);
+				//get information of previous application
 				var currentAppTabId = getTabIdFromAppId(tabIdToAppInfo, currentApp.id);
 
+				//and send messge onPause
 				if(typeof currentAppTabId === "undefined"){
 					console.log("SCHEDULER | FIRST RUN ");
 				}
 				else{		
 					var time = timeStamp();
-					console.log(time + " | MESSAGES Extension | >> Sending message <" + messageOnPause + "> to extensionScript (" + currentApp.url + " , " + currentAppTabId + ")");
+					console.log(time + " | MESSAGES " + url + " | << Receiving <" + state + " , " + message.time + ">");
+					console.log(time + " | MESSAGES " + currentApp.url + " | >> Sending <" + messageOnPause + ">");
 					chrome.tabs.sendMessage(currentAppTabId, {state: messageOnPause, url: currentApp.url});
 				}
 
+				//if the application was not interrupted
 				if(pausedFlag === false){
 					//update schedule
 					updateSchedule(schedule);
@@ -317,8 +372,10 @@ function main(){
 					printArray(schedule);
 				}
 				else{
-					pausedFlag = false;
+					//pausedFlag = false;
 				}
+
+				console.log("APP DURATIONNNNNNNNNNNNNNNNNNNNNN: " + appDuration);
 
 				//when apps duration is almost done (10 seconds before)
 				timerPauseRequest = new Timer(function(){
@@ -335,12 +392,13 @@ function main(){
 
 					//send onPauseRequest to current application
 					var time = timeStamp();
-					console.log(time + " | MESSAGES Extension | >> Sending message <" + messageOnPauseRequest + "> to extensionScript (" + url + " , " + id + ")");
+					console.log(time + " | MESSAGES " + url + " | >> Sending <" + messageOnPauseRequest + ">");
 					chrome.tabs.sendMessage(id, {state: messageOnPauseRequest, url: url});
 				}, (appDuration * 1000) - hideNotificationTime);
 
 				//when apps duration is done
 				timerPause = new Timer(function(){
+					console.log("APPS | NEXT APP ID: " + schedule[0].id + " PAUSED: " + schedule[0].paused);
 					if(schedule[0].paused === false){
 						//start loading next application
 						loadApp(schedule[0]);
@@ -354,24 +412,49 @@ function main(){
 			break;
 
 			case "pauseReady":
+				extraTime = 0;
+				console.log("Printing !!!!!!!!!!!!!!!!!!!!!!!!!!!!! Dhgasifygvausfbvdaushaushyfbgaushyfbgayksgbf");
+				printArray(schedule);
+
 				if(message.time > 0){
 					console.log("APPS | Application " + url + " needs " + message.time + " seconds more !");
-					var extraTime = message.time;
+					
+					extraTime = message.time;
+
 					//seconds -> miliseconds
-					var extraTimeMiliseconds = extraTime * 1000;
+					extraTimeMiliseconds = extraTime * 1000;
+
+					//updating onPauseRequest value with extraTimeMiliseconds
+					schedule[schedule.length-1].opr = extraTimeMiliseconds;
+
 					giveMeMoreTimeFunc(extraTimeMiliseconds);
+
+					console.log("Printing !!!!!!!!!!!!!!!!!!!!!!!!!!!!! Dhgasifygvausfbvdaushaushyfbgaushyfbgayksgbf");
+					printArray(schedule);
+				}
+				else if(message.time = 0){
+					schedule[schedule.length-1].opr = 0;
 				}
 			break;
 
 			case "paused":
-				var unloadingApp = getAppFromTabId(applications,id);
-				console.log("UNLOADIND APP: " + unloadingApp.url + " PAUSED: " + unloadingApp.paused + "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+				var time = timeStamp();
+				//var unloadingApp = getAppFromTabId(applications,id);
+				
+				if(pausedFlag === true){
+					schedule[schedule.length-1].paused = true;
+					pausedFlag = false;
+				}
+
+				console.log(time + "ID: " + getAppFromTabId(applications,id) + " | UNLOADIND APP: " + url + " PAUSED: " + schedule[schedule.length-1].paused + "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 				
 				//if the current application was not interrupted
-				if(unloadingApp.paused === false){
+				if(schedule[schedule.length-1].paused === false){
+					//change onPauseRequest flag to false
+					schedule[schedule.length-1].opr = false;
 					//send onUnload message
 					var time = timeStamp();
-				    console.log(time + " | MESSAGES Extension | >> Sending message <" + messageOnUnload + "> to extensionScript (" + url + " , " + id + ")");
+				    console.log(time + " | MESSAGES " + url + " | >> Sending <" + messageOnUnload + ">");
 					chrome.tabs.sendMessage(id, {state: messageOnUnload, url: url});
 				}
 				else{

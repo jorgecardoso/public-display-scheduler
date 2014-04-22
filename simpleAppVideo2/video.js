@@ -10,11 +10,13 @@ var description;
 var videoID = [];
 var ids = ["Jwj5KhF1Hhk","9ZVwJfkM0Eg","brLuH74fjlw","wZqE2wm2skU","wCkerYMffMo"];
 var id;
-var videoDuration = 0;
-var secondsEllapsed = 0;
+window.videoDuration = 0;
+window.secondsEllapsed = 0;
 var appStopped = 0;
 var secondsTimer = null;
-
+window.startTime;
+window.pausedTime;
+window.pauseRequestTime;
 
 //get a random number between min and max
 function getRandomInt(min, max){
@@ -26,7 +28,12 @@ function functionWithData(data) {
 	var deferred = $.Deferred();
 
 	//get video duration in seconds
-	videoDuration = data.entry.media$group.yt$duration.seconds;
+	window.videoDuration = data.entry.media$group.yt$duration.seconds;
+	window.videoDuration = window.videoDuration*1000;
+
+	//extra 2 seconds given automatically
+	window.videoDuration = window.videoDuration - 2000;
+	console.log("VIDEO DURATION IN MILISECONDS: " + window.videoDuration);
 
 	deferred.resolve();
 	return deferred.promise();	
@@ -37,14 +44,7 @@ function pause() {
 }
 
 function resume(){
-	swfobject.getObjectById('randomVideo').resumeVideo();
-}
-
-
-//auxiliar function to count ellapsed time (visible on console)
-function countingTime(){
-	console.log("Counting seconds...");
-	secondsEllapsed++;
+	swfobject.getObjectById('randomVideo').playVideo();
 }
 
 //lifecycle functions
@@ -52,8 +52,8 @@ function onCreate(callback){
 	console.log("LIFECYCLE | onCreate of " + document.URL + " is running...");
 	callback();
 	setTimeout(function(){
-		showMe();
-	},40000);
+		//showMe();
+	},60000);
 }
 
 function onLoad(callback){
@@ -84,18 +84,14 @@ function onLoad(callback){
 }
 
 function onResume(){
+	//get start time
+	window.startTime = new Date().getTime();
+
 	if(appStopped === 0){
 		console.log("LIFECYCLE | onResume of " + document.URL + " is running...");
 		console.log("RandomVideo is displaying...");
 
-		if(secondsTimer != null){
-			console.log("CLEARINGGGGGGGGGGGGGGGGGGGGGGG TIMER !");
-			clearInterval(secondsTimer);
-			secondsEllapsed = 0;
-		}
-
-		//start counting time
-		secondsTimer = setInterval(countingTime,1000);
+		console.log("STARRRRRRRRRRRRRRRRRRRRT TIME : " + window.startTime );
 
 		//starts playing random video
 		var params = { allowScriptAccess: "always" };
@@ -103,22 +99,50 @@ function onResume(){
 			"randomVideo", "600", "240", "9.0.0",null, null, params);
 	}
 	else{
+		console.log("SECONDS ELLAPSED AFTER PAUSE: " + window.secondsEllapsed);
+		console.log("VIDEO DURATION: " + window.videoDuration);
+		window.videoDuration = window.videoDuration - window.secondsEllapsed;
+		console.log("VIDEO DURATION AFTER PAUSE: " + window.videoDuration);
 		resume();
 	}	
 }
 
 function onPauseRequest(callback){
-	console.log("LIFECYCLE | onPauseRequest of " + document.URL + " is running...");
-	//calculates how many time is needed to finish video
-	console.log("Seconds ellapsed: " + secondsEllapsed);
-	console.log("Video duration: " + videoDuration);
-	timeAux = videoDuration - secondsEllapsed;
+	var timeAux;
+
+	if(appStopped === 0){
+		window.pauseRequestTime = new Date().getTime();
+		window.secondsEllapsed = window.pauseRequestTime - window.startTime;
+		console.log("LIFECYCLE | onPauseRequest of " + document.URL + " is running...");
+		//calculates how many time is needed to finish video
+		console.log("Seconds ellapsed: " + window.secondsEllapsed);
+		console.log("Video duration: " + window.videoDuration);
+		timeAux = window.videoDuration - window.secondsEllapsed;
+
+		console.log("TIME AUX NO PAUSE: " + timeAux);
+
+		//miliseconds -> seconds
+		timeAux = timeAux / 1000;
+		timeAux = Math.floor(timeAux);
+	}
+	else{
+		console.log("VIDEO DURATION AFTER PAUSE: " + window.videoDuration);
+		window.pauseRequestTime = new Date().getTime();
+		timeAux = window.videoDuration - window.secondsEllapsed;
+		console.log("TIMEAUX AFTER PAUSE: " + timeAux);
+
+		//miliseconds -> seconds
+		timeAux = timeAux / 1000;
+
+		timeAux = Math.floor(timeAux);
+	}
+
 
 	//removes remaining seconds of onPause callback
-	timeAux = timeAux - 9;
+	//timeAux = timeAux - 9;
 	
 	//if requested time is bigger than 60 seconds
-	if(timeAux > 60000){
+	if(timeAux > 60){
 		//ignore request
 		time = 0;
 		callback();
@@ -133,9 +157,13 @@ function onPauseRequest(callback){
 function onPause(callback){
 	console.log("LIFECYCLE | onPause of " + document.URL + " is running...");
 	appStopped = 1;
+	//startTime = 0;
 
 	//pause video
 	pause();
+	window.pausedTime = new Date().getTime();
+	window.secondsEllapsed = window.pausedTime - window.startTime;
+	console.log("SECONDS ELLAPSED AFTER PAUSE: " + window.secondsEllapsed);
 
 	callback();
 }

@@ -164,6 +164,7 @@ function messageReceived(event){
 var state;
 var url;
 var time;
+var appId;
 
 //main()
 $(document).ready(function() {

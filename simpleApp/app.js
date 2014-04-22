@@ -20,10 +20,11 @@ function onLoad(callback){
 
 function onResume(){
 	console.log("LIFECYCLE | onResume of " + url + " is running...");
+	document.getElementById("onResumeText").value='onResume';
+
 	setTimeout(function(){
-		document.getElementById("onResumeText").value='onResume';
-		//releaseMe();
-	},6000);
+		showMe();
+	},27000);
 }
 
 function onPauseRequest(callback){
