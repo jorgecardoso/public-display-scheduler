@@ -24,70 +24,64 @@ function timeStamp() {
 	return  time.join(":");
 }
 
-var time = timeStamp();
-console.log("TIME:" + time);
+function printSimpleMsg(type, message, arg){
+	var time = timeStamp();
+	console.log("%s | %s | %s %s", time, type, message, arg);
+}
+
+function printCommunicationMsg(from, message, arg){
+	var time = timeStamp();
+	console.log("%c%s | COMMUNICATION %s | %s %s < %s %s>", "color: blue ", time, from, arg[0], message, arg[1], arg[2]);
+}
+
+function printRedMsg(type, message, arg){
+	var time = timeStamp();
+	console.log("%c%s | %s | %s %s", "color: red", time, type, message, arg);
+}
 
 //listen for showMe message from application
 document.addEventListener('showMe', function(source){
-	console.log(time + " | MESSAGES ExtensionScript | << Receiving message showMe from appScript of ");
+	printRedMsg("SHOW ME", "Receiving message SHOW ME from application", source.target.URL);
 	chrome.extension.sendMessage({state : "showMe"});
 })
 
 document.addEventListener('releaseMe', function(source){
-	console.log(time + " | MESSAGES ExtensionScript | << Receiving message releaseMe from appScript of ");
+	printRedMsg("RELEASE ME", "Receiving message RELEASE ME from application", source.target.URL);
 	chrome.extension.sendMessage({state : "releaseMe"});
 })
 
 //listen for messages coming from appScript.js  
-document.addEventListener('msgFromAppScript', function(data,source) {
+document.addEventListener('msgFromAppScript', function(data) {
 	var state = data.detail.state;
+	var url = data.target.URL;
 
 	if(state === "pauseReady"){
-		var time = timeStamp();
-		console.log(time + " | MESSAGES ExtensionScript | << Receiving message <" + state + " , " + data.detail.time + "> from appScript of ");
+		printCommunicationMsg("extensionScript", "<< Receiving",  [url, state, data.detail.time]);
 	}
 	else{
-		var time = timeStamp();
-		console.log(time + " | MESSAGES ExtensionScript | << Receiving message <" + state + "> from appScript of ");
+		printCommunicationMsg("extensionScript", "<< Receiving", [url, state, ""]);
 	}
 
 
 	switch(state){
 		case "created":
-			var time = timeStamp();
-			console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + "> to Extension");
-	      	chrome.extension.sendMessage({state : state});
-		break;
-
-		case "createdFromAppScript":
-			var time = timeStamp();
-			console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + "> to Extension");
-			//reload application's page
+			printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
 	      	chrome.extension.sendMessage({state : state});
 		break;
 
 		case "loaded":
-			var time = timeStamp();
-			console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + "> to Extension");
+			printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
 	      	chrome.extension.sendMessage({state : state});
 		break;
 
 		case "pauseReady":
-			var time = timeStamp();
-			console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + " , " + data.detail.time + "> to Extension");
+			printCommunicationMsg("extensionScript", ">> Sending", [url, state, data.detail.time]);
 	      	chrome.extension.sendMessage({state : state, time: data.detail.time});
 		break;
 
 		case "paused":
-			var time = timeStamp();
-			console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + "> to Extension");
+			printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
 	      	chrome.extension.sendMessage({state : state, time: data.detail.time});
-		break;
-
-		case "createdFromAppScript":
-			var time = timeStamp();
-			console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + "> to Extension");
-	      	chrome.extension.sendMessage({state : state});
 		break;
 	}
 });
@@ -100,42 +94,36 @@ chrome.runtime.onMessage.addListener(
 		var url = message.url;
 		var time = timeStamp();
 
-		console.log(time + " | MESSAGES ExtensionScript | << Receiving message <" + state + "> from Extension");
+		printCommunicationMsg("extensionScript", "<< Receiving", [url, state, ""]);
 
 		switch(state){
 			case "onCreate":
-				var time = timeStamp();
-				console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + " to appScript " + "(" + url + ")");
+				printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
        			window.postMessage({state: message.state}, url);
 			break;
 
 			case "onLoad":
-				var time = timeStamp();
-				console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + " to appScript " + "(" + url + ")");
+				printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
        			window.postMessage({state: message.state}, url);
 			break;
 
 			case "onResume":
-				var time = timeStamp();
-				console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + "> to appScript " + "(" + url + ")");
+				printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
        			window.postMessage({state: message.state}, url);
 			break;
 
 			case "onPauseRequest":
-				var time = timeStamp();
-				console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + "> to appScript " + "(" + url + ")");
+				printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
        			window.postMessage({state: message.state}, url);
 			break;
 
 			case "onPause":
-				var time = timeStamp();
-				console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + "> to appScript " + "(" + url + ")");
+				printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
        			window.postMessage({state: message.state}, url);	
 			break;
 
 			case "onUnload":
-				var time = timeStamp();
-				console.log(time + " | MESSAGES ExtensionScript | >> Sending message <" + state + "> to appScript " + "(" + url + ")");
+				printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
        			window.postMessage({state: message.state}, url);	
 			break;
 		}

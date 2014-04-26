@@ -1,9 +1,26 @@
 console.log("support.js is running...");
 
-function printArray(array){
+function printArray(array, text){
+	var time = timeStamp();
+	console.log("%s | SCHEDULE  | %s", time, text);
 	for(var i = 0; i < array.length; i++){
 		console.log(array[i]);
 	}
+}
+
+function printSimpleMsg(type, message, arg){
+	var time = timeStamp();
+	console.log("%s | %s | %s %s", time, type, message, arg);
+}
+
+function printCommunicationMsg(from, message, arg){
+	var time = timeStamp();
+	console.log("%c%s | COMMUNICATION %s | %s %s < %s %s>", "color: blue ", time, from, arg[0], message, arg[1], arg[2]);
+}
+
+function printRedMsg(type, message, arg){
+	var time = timeStamp();
+	console.log("%c%s | %s | %s %s", "color: red", time, type, message, arg);
 }
 
 function updateSchedule(schedule){
@@ -44,6 +61,12 @@ function initialSchedule(apps){
 //given an application and index, creates an inactive tab with the application
 function createApp(app,callback){
 	chrome.tabs.create({ url: app.url, active: false}, function(tab){
+		//get window ID
+		if(firstCreatedAppFlag === true){
+			windowId = tab.windowId;
+			firstCreatedAppFlag = false;
+		}
+
 		chrome.tabs.executeScript(tab.id, {file: "extensionScript.js", runAt: "document_end"}, function(array){
 			var appInfo = [];
 			appInfo.push(app.id);
@@ -69,7 +92,7 @@ function loadBckApps(apps){
 //add an application to hash table (tabIdToAppInfo) given a table id and an url
 function addAppToHash(tabId,appInfo){
 		tabIdToAppInfo[tabId] = appInfo; // also available as tab.id and changeInfo.url
-	   	console.log("HASH | Tab " + appInfo[1] + " with ID " + tabId + " added !");
+	   	//console.log("HASH | Tab " + appInfo[1] + " with ID " + tabId + " added !");
 };
 
 //send message onCreate to all background applications loaded in inactive tabs
@@ -101,7 +124,7 @@ function getTabIdFromAppId(hash, id) {
 //loads an application on a background page
 function openAppInBackgroundTab(tabUrl){
 	var def = $.Deferred();
-	console.log("APPS | Opening application " + tabUrl + " on background tab...");
+	//console.log("APPS | Opening application " + tabUrl + " on background tab...");
 	chrome.tabs.create({ url: tabUrl, active: false }, function(tab){
 		chrome.tabs.executeScript(tab.id, {file: "extensionScript.js", runAt: "document_end"}, function(array){
 			var time = timeStamp();
@@ -116,8 +139,7 @@ function openAppInBackgroundTab(tabUrl){
 function activateBackgroundTab(tabId,url){
 	chrome.tabs.update(tabId, {active: true}, function(tab){
 		if(tab.status === "complete"){
-			var time = timeStamp();
-			console.log(time + " | MESSAGES " + url + " | >> Sending message " + messageOnResume);
+			printCommunicationMsg("Scheduler", ">> Sending", [url, messageOnResume, ""]);
 	      	chrome.tabs.sendMessage(tabId,{state : messageOnResume, url: url});
 		}
 	});
@@ -161,7 +183,6 @@ function addShowMeApp(newApp){
 
 	//if there isn't any showMe application waiting
 	if(schedule[0].showMe === false){
-		console.log("SHOW ME | There isn't any showMe apps waiting !");
 		//add new app to the beginning of the array
 		schedule.unshift(newApp);
 	}
