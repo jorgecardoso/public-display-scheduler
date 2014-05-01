@@ -28,7 +28,8 @@ var pausedTime;
 var extraTime;
 var extraTimeMiliseconds;
 var windowId;
-var numMaxTabs = 6;
+var openedApps = 0;
+var numMaxTabs = 4;
 var schedulerActiveTab;
 
 //flags
@@ -40,9 +41,9 @@ var pausedFlag = false;
 //hardcoded schedules
 var applications = [
 {id: 0, url: "http://localhost/05_03_simpleAppJoke/", duration: 15, priority: 2, background: false, showMe: false, paused: false, opr: false},
-{id: 1, url: "http://localhost/05_03_simpleBackgroundApp2/", duration: 15, priority: 1, background: true, showMe: false, paused: false, opr: false},
+{id: 1, url: "http://localhost/05_03_simpleAppCalendar/", duration: 20, priority: 1, background: true, showMe: false, paused: false, opr: false},
 {id: 2, url: "http://localhost/05_03_simpleAppVideo2/", duration: 30, priority: 3, background: false, showMe: false, paused: false, opr: false},
-{id: 3, url:"http://localhost/05_03_simpleBackgroundApp/", duration: 10, priority: 3, background: true, showMe: false, paused: false, opr: false},
+{id: 3, url:"http://localhost/05_03_simpleBackgroundApp/", duration: 10, priority: 2, background: true, showMe: false, paused: false, opr: false},
 {id: 4, url: "http://localhost/05_03_simpleApp/", duration: 30, priority: 3, background: false, showMe: false, paused: false, opr: false},
 ];
 
@@ -72,6 +73,9 @@ function addNewApp(url,duration,priority,background){
 
 var startScheduler = function starting(){
 	printSimpleMsg("SCHEDULER", "Starting...","");
+
+	//window used by scheduler is set to fullscreen
+	//chrome.windows.update(chrome.windows.WINDOW_ID_CURRENT, {state: "fullscreen"});
 
 	//get initial schedule with all regular apps
 	schedule = initialSchedule(applications);
@@ -303,6 +307,18 @@ function main(){
 			break;
 
 			case "created":
+				openedApps = Object.keys(tabIdToAppInfo).length;
+				console.log("OPENED APPS: " + openedApps);
+
+				if(openedApps > numMaxTabs){
+					var lastApp = pickLastApp(schedule);
+					console.log("APPS | THIS IS THE LAST APPLICATION TO BE EXECUTED: " + lastApp.url + lastApp.id);
+					var tabId = getTabIdFromAppId(tabIdToAppInfo, lastApp.id);
+					//send message onDestroy to application
+					printCommunicationMsg("Scheduler", ">> Sending", [lastApp.url, messageOnDestroy, ""]);
+					chrome.tabs.sendMessage(tabId, {state: messageOnDestroy, url: lastApp.url});
+				}
+
 
 				var app = getAppFromTabId(applications,id);
 				createdApps.push(app);
@@ -412,9 +428,7 @@ function main(){
 				}
 			break;
 
-			case "paused":
-				var time = timeStamp();
-				
+			case "paused":				
 				if(pausedFlag === true){
 					schedule[schedule.length-1].paused = true;
 					pausedFlag = false;
@@ -431,6 +445,11 @@ function main(){
 				else{
 					//console.log("application is paused therefore it shouldn't be unload yet!!!");
 				}
+			break;
+
+			case "destroyReady":
+				chrome.tabs.remove(id);
+				//remove app from hashtable
 			break;
 		}
 	});

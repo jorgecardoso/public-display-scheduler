@@ -80,6 +80,22 @@ function createApp(app,callback){
 	});
 }
 
+function pickLastApp(schedule){
+	var lastApp = schedule[schedule.length - 1];
+	//last application of the list
+	var penultimateApp = schedule[schedule.length - 2];
+
+	//if the last application is currently running
+	if(lastApp.id === penultimateApp.id){
+		console.log("Second check!");
+		return schedule[schedule.length - 3];
+	}
+	else{
+		console.log("Third check!");
+		return penultimateApp;
+	}
+}
+
 //load all background tabs one by one
 function loadBckApps(apps){
 	for(var i = 0; i < apps.length; i++){
@@ -171,11 +187,14 @@ function isPriorityBigger(newApp,currentApp){
 }
 
 function isPrioritySmaller(newApp,currentApp){
+	console.log("NEW APP PRIORITY: " + newApp.priority);
+	console.log("TOP APP PRIORITY: " + currentApp.priority);
+
 	if(newApp.priority < currentApp.priority)
-		return false;
+		return true;
 	else
 		//if priority is bigger or equal, returns false
-		return true;
+		return false;
 }
 
 function addShowMeApp(newApp){
@@ -193,7 +212,8 @@ function addShowMeApp(newApp){
 			var app = schedule[i];
 			var compare = isPrioritySmaller(newApp,app);	
 			//if showMe app priority is smaller than the next showMe app waiting
-			if(compare === false){
+			if(compare === true){
+				console.log("PRIORITY IS SMALLER !!!!!!!!!");
 				addShowMeAppFlag = true;
 				//add new showMe app to the top of the list
 				schedule.splice(i,0,newApp);
@@ -202,6 +222,7 @@ function addShowMeApp(newApp){
 		}
 
 		if(addShowMeAppFlag === false){
+			console.log("PRIORITY IS BIGGER !!!!!!!!!!!!");
 			schedule.splice(number,0,newApp);
 		}	
 	}

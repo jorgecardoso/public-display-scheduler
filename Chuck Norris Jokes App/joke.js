@@ -8,6 +8,7 @@ var randomNumber;
 var displayInterval;
 var numberOfJokes = 5;
 var appStopped = 0; 
+var extraTime;
 
 //process data received from the server
 function functionWithData(data) {
@@ -35,17 +36,15 @@ function clearBox(elementID)
 }
 
 //lifecycle functions
-function onCreate(callback){
-	var time = timeStamp();
-	console.log(time + " | LIFECYCLE | onCreate of " + url + " is running...");
-	callback();
+function onCreate(){
+	console.log(" | LIFECYCLE | onCreate of " + url + " is running...");
 
 	setTimeout(function(){
 		showMe();
 	},50000);
 }
 
-function onLoad(callback){
+function onLoad(loaded){
 	console.log("LIFECYCLE | onLoad of " + url + " is running...");
 
 	//calculates a random number between 1 and "numberOfJokes"
@@ -66,12 +65,12 @@ function onLoad(callback){
 			$.when($.getJSON(url, functionWithData)).then(function(){
 				console.log("Size of jokes: " + sizeJokes);
 				//when operation is done, send message to appScript
-				callback();
+				loaded();
 			});
 		}
 		else{
 			//if everything is okay
-			callback();
+			loaded();
 		}		
 	});
 }
@@ -109,7 +108,7 @@ function onResume(){
 }
 
 //calculates if more time is needed to display all jokes
-function onPauseRequest(callback){
+function onPauseRequest(){
 	console.log("LIFECYCLE | onFinishRequest of " + url + " is running...");
 	console.log("APPS | SimpleJoke | Showed jokes: " + showedJokes);
 	console.log("APPS | SimpleJoke | Random number: " + randomNumber);
@@ -119,32 +118,24 @@ function onPauseRequest(callback){
 		console.log("APPS | SimpleJoke | Need more time to display jokes!");
 		var remainingJokes = randomNumber - showedJokes;
 		console.log("APPS | SimpleJoke | Remaining jokes: " + remainingJokes);
-		time = (remainingJokes * jokeDuration)/1000;
-		//time = time - 10000;
-		console.log("APPS | SimpleJoke | Give me more: " + time);
+		extraTime = (remainingJokes * jokeDuration)/1000;
+		console.log("APPS | SimpleJoke | Give me more: " + extraTime);
 
-		if(appStopped === 1){
-			time = time + jokeDuration/1000;
-		}
-
-		callback();
+		return extraTime;
 	}
 	else{
-		time = 0;
-		callback();
+		return 0;
 	}
 }
 
-function onPause(callback){
+function onPause(){
 	console.log("LIFECYCLE | onPause of " + url + " is running...");
 
 	window.clearInterval(displayInterval);
 	appStopped = 1;
-
-	callback();
 }
 
-function onUnload(callback){
+function onUnload(){
 	console.log("LIFECYCLE | onUnload of " + url + " is running...");
 	
 	//clear div with all jokes
@@ -153,7 +144,7 @@ function onUnload(callback){
 	appStopped = 0;
 }
 
-function onDestroy(callback){
+function onDestroy(destroyReady){
 	console.log("LIFECYCLE | onDestroy of " + url + " is running...");
-	callback();
+	destroyReady();
 }

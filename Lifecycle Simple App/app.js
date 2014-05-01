@@ -1,49 +1,52 @@
 //lifecycle functions
-function onCreate(callback){
+function onCreate(){
 	var time = timeStamp();
 	console.log(time + " | LIFECYCLE | onCreate of " + url + " is running...");
-	document.getElementById("onCreateText").value='onCreate';
 
 	setTimeout(function(){
-		callback();
+		document.getElementById("onCreateText").value='onCreate';
 	},3000);
 }
 
-function onLoad(callback){
+function onLoad(loaded){
 	console.log("LIFECYCLE | onLoad of " + url + " is running...");
-	document.getElementById("onLoadText").value='onLoad';
+
+	setTimeout(function(){
+		document.getElementById("onLoadText").value='onLoad';
+	},3000);
 	
 	setTimeout(function(){
-		callback();
+		loaded();
 	},3000);
 }
 
 function onResume(){
 	console.log("LIFECYCLE | onResume of " + url + " is running...");
-	document.getElementById("onResumeText").value='onResume';
+
+	setTimeout(function(){
+		document.getElementById("onResumeText").value='onResume';
+	},3000);
 
 	setTimeout(function(){
 		showMe();
 	},27000);
 }
 
-function onPauseRequest(callback){
+function onPauseRequest(){
 	console.log("LIFECYCLE | onPauseRequest of " + url + " is running...");
-	document.getElementById("onPauseRequestText").value='onPauseRequest';
 
-	time = 0;
-	 
 	setTimeout(function(){
-		callback();
+		document.getElementById("onPauseRequestText").value='onPauseRequest';
 	},3000);
+
+	return 0;
 }
 
-function onPause(callback){
+function onPause(){
 	console.log("LIFECYCLE | onPause of " + url + " is running...");
-	document.getElementById("onPauseText").value='onPause';
 
 	setTimeout(function(){
-		callback();
+		document.getElementById("onPauseText").value='onPause';	
 	},3000);
 }
 
@@ -61,7 +64,7 @@ function onUnload(){
 	},2000);
 }
 
-function onDestroy(callback){
+function onDestroy(destroyReady){
 	console.log("LIFECYCLE | onDestroy of " + url + " is running...");
-	callback();
+	destroyReady();
 }

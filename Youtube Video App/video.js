@@ -48,15 +48,14 @@ function resume(){
 }
 
 //lifecycle functions
-function onCreate(callback){
+function onCreate(){
 	console.log("LIFECYCLE | onCreate of " + document.URL + " is running...");
-	callback();
 	setTimeout(function(){
 		//showMe();
 	},60000);
 }
 
-function onLoad(callback){
+function onLoad(loaded){
 	console.log("LIFECYCLE | onLoad of " + document.URL + " is running...");
 
 	var c = document.getElementById("randomVideo");
@@ -79,7 +78,7 @@ function onLoad(callback){
 
 	$.when($.getJSON(url, functionWithData)).then(function(){
 		//when done, sends message to appScript
-		callback();
+		loaded();
 	});
 }
 
@@ -107,7 +106,7 @@ function onResume(){
 	}	
 }
 
-function onPauseRequest(callback){
+function onPauseRequest(){
 	var timeAux;
 
 	if(appStopped === 0){
@@ -137,20 +136,17 @@ function onPauseRequest(callback){
 		timeAux = Math.floor(timeAux);
 	}
 
-
 	//removes remaining seconds of onPause callback
 	//timeAux = timeAux - 9;
 	
 	//if requested time is bigger than 60 seconds
 	if(timeAux > 60){
 		//ignore request
-		time = 0;
-		callback();
+		return 0;
 	}
 	else{
 		//if is smaller, give requested time to application
-		time = timeAux;
-		callback();
+		return timeAux;
 	}
 }
 
@@ -164,8 +160,6 @@ function onPause(callback){
 	window.pausedTime = new Date().getTime();
 	window.secondsEllapsed = window.pausedTime - window.startTime;
 	console.log("SECONDS ELLAPSED AFTER PAUSE: " + window.secondsEllapsed);
-
-	callback();
 }
 
 function onUnload(){
@@ -176,9 +170,8 @@ function onUnload(){
 	swfobject.removeSWF("randomVideo");
 }
 
-function onDestroy(callback){
+function onDestroy(destroyReady){
 	console.log("LIFECYCLE | onDestroy of " + document.URL + " is running...");
-	//clear all variables
-	callback();
+	destroyReady();
 }
 

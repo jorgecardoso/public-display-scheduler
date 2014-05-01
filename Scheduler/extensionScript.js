@@ -81,7 +81,12 @@ document.addEventListener('msgFromAppScript', function(data) {
 
 		case "paused":
 			printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
-	      	chrome.extension.sendMessage({state : state, time: data.detail.time});
+	      	chrome.extension.sendMessage({state : state});
+		break;
+
+		case "destroyReady":
+			printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
+	      	chrome.extension.sendMessage({state : state});		
 		break;
 	}
 });
@@ -125,6 +130,11 @@ chrome.runtime.onMessage.addListener(
 			case "onUnload":
 				printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
        			window.postMessage({state: message.state}, url);	
+			break;
+
+			case "onDestroy":
+				printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
+       			window.postMessage({state: message.state}, url);
 			break;
 		}
 	}
