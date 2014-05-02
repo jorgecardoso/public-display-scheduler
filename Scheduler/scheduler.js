@@ -40,11 +40,11 @@ var pausedFlag = false;
 
 //hardcoded schedules
 var applications = [
-{id: 0, url: "http://localhost/05_03_simpleAppJoke/", duration: 15, priority: 2, background: false, showMe: false, paused: false, opr: false},
-{id: 1, url: "http://localhost/05_03_simpleAppCalendar/", duration: 20, priority: 1, background: true, showMe: false, paused: false, opr: false},
-{id: 2, url: "http://localhost/05_03_simpleAppVideo2/", duration: 30, priority: 3, background: false, showMe: false, paused: false, opr: false},
-{id: 3, url:"http://localhost/05_03_simpleBackgroundApp/", duration: 10, priority: 2, background: true, showMe: false, paused: false, opr: false},
-{id: 4, url: "http://localhost/05_03_simpleApp/", duration: 30, priority: 3, background: false, showMe: false, paused: false, opr: false},
+{id: 0, name: "Chuck Norris Jokes", url: "http://localhost/05_03_simpleAppJoke/", duration: 15, priority: 2, background: false, showMe: false, paused: false, opr: false},
+{id: 1, name: "Calendar", url: "http://localhost/05_03_simpleAppCalendar/", duration: 20, priority: 1, background: true, showMe: false, paused: false, opr: false},
+{id: 2, name: "Youtube Video", url: "http://localhost/05_03_simpleAppVideo2/", duration: 30, priority: 3, background: false, showMe: false, paused: false, opr: false},
+{id: 3, name: "Simple Bck App", url:"http://localhost/05_03_simpleBackgroundApp/", duration: 10, priority: 2, background: true, showMe: false, paused: false, opr: false},
+{id: 4, name: "Lifecycle App", url: "http://localhost/05_03_simpleApp/", duration: 30, priority: 3, background: false, showMe: false, paused: false, opr: false},
 ];
 
 var openOptions = function optionsPage(){
@@ -55,10 +55,11 @@ var stopScheduler = function stop(){
 
 }
 
-function addNewApp(url,duration,priority,background){
+function addNewApp(name,url,duration,priority,background){
 	var newApp = {};
 
 	newApp.id = 5;
+	newApp.name = name;
 	newApp.url = url;
 	newApp.duration = duration;
 	newApp.priority = priority;
@@ -71,14 +72,30 @@ function addNewApp(url,duration,priority,background){
 	printRedMsg("APPS", "New application added: ",url);
 }
 
+function removeApp(appId){
+	for(var i = 0; i < schedule.length; i++){
+		if(schedule[i].id === appId)
+			schedule.splice(i, 1);
+	}
+}
+
+function updateApp(appId,updatedValues){
+	for(var i = 0; i < schedule.length; i++){
+		if(schedule[i].id === appId){
+			schedule[i].name = updatedValues[0];
+			schedule[i].url = updatedValues[1];
+			schedule[i].duration = updatedValues[2];
+			schedule[i].priority = updatedValues[3];
+			schedule[i].background = updatedValues[4];
+		}
+	}
+}
+
 var startScheduler = function starting(){
 	printSimpleMsg("SCHEDULER", "Starting...","");
 
 	//window used by scheduler is set to fullscreen
 	//chrome.windows.update(chrome.windows.WINDOW_ID_CURRENT, {state: "fullscreen"});
-
-	//get initial schedule with all regular apps
-	schedule = initialSchedule(applications);
 
 	//print initial array
 	printArray(schedule, "INITIAL SCHEDULE");
@@ -207,6 +224,9 @@ function resumeApp(app){
 }
 
 function main(){
+	//get initial schedule with all regular apps
+	schedule = initialSchedule(applications);
+
 	//everytime a tab is removed, id is removed from hashtable "tabIdToURL"
 	chrome.tabs.onRemoved.addListener(function(tabId) {
 	    delete tabIdToAppInfo[tabId];

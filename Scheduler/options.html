@@ -1,11 +1,22 @@
 <html>
-<head><title>Scheduler Options</title></head>
+<head>
+	<title>Scheduler Options</title>
+	<script src="jquery.js"></script>
+	<script src="options.js"></script>
+	<!-- DataTables CSS -->
+	<link rel="stylesheet" type="text/css" href="jquery.dataTables.css">	  
+	<!-- DataTables -->
+	<script type="text/javascript" charset="utf8" src="jquery.dataTables.js"></script>
+</head>
 
 <body>
 	<h1>Options</h1>
 	<h2>Add a new application</h2>
 
-	<form>
+	<form id="addNewApp">
+		Application name:
+		<input type="text" id="inputAppName" name="appName">
+		<br> 
 		Application URL:
 		<input type="text" id="inputAppUrl" name="appUrl">
 		<br>
@@ -23,7 +34,48 @@
 	</form>
 	<button id="buttonAddApp">Add!</button>
 
-	<script src="options.js"></script>
+	<h2>Current applications</h2>
+	<table id="appsInfoTable" class="display" cellspacing="0" width="100%">
+        <thead>
+            <tr>
+            	<th>ID</th>
+                <th>Name</th>
+                <th>URL</th>
+                <th>Duration</th>
+                <th>Priority</th>
+                <th>Background</th>
+            </tr>
+        </thead>
+    </table>
+
+    <button id="buttonRemoveApp"> Remove selected app </button>
+    <button id="buttonUpdateApp"> Update selected app </button>
+
+    <div id="appInfo" style="display: none;">
+    	<h2> Update application </h2>
+		<form id="updateApp">
+			Application name:
+			<input type="text" id="inputUpdatedName" name="appName">
+			<br> 
+			Application URL:
+			<input type="text" id="inputUpdatedUrl" name="appUrl">
+			<br>
+			Application Duration:
+			<input type="text" id="inputUpdatedDuration" name="appDuration">
+			<br>
+			Application Priority:
+			<input type="text" id="inputUpdatedPriority" name="appPriority">
+			<br>
+			Is it a background application:
+			<select id="UpdatedBackgroundApp">
+			  <option value="true"> Yes </option>
+			  <option value="false"> No </option>
+			</select>
+		</form>	
+
+		<button id="buttonSendUpdate"> Update app! </button>
+    </div>
 </body>
 
 </html>
+
