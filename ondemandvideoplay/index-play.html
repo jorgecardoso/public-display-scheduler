@@ -1,0 +1,132 @@
+<html>
+<head>
+<meta charset="UTF-8">
+<script type="text/javascript" src="http://web-channel.appspot.com/_ah/channel/jsapi"></script>
+<script type="text/javascript" src="http://web-channel.appspot.com/channel.js"></script>
+
+    
+<script  type="text/javascript">
+	var channelKey = "ondemandvideoplayer";
+
+	var clientid = Math.floor(Math.random()*10000);
+	
+	console.log("Client ID: " + clientid);
+	
+	function load() {	
+		myOpenChannel();
+	}
+
+	function mySendMessage(message) {
+		console.log("Sending message: " + message );
+		sendMessage(channelKey, message);
+	}
+
+	
+
+	function myOpenChannel() {
+		console.log("myOpenChannel...");
+		closeChannel();
+
+		var token = localStorage.getItem("token-"+channelKey);
+		console.log("Token from localstorage: " + token);
+		var tokenTimestamp = localStorage.getItem("timestamp-"+channelKey);
+		var age = new Date().getTime() - tokenTimestamp;
+		if ( token === null  || typeof(token) === "undefined" || token.length < 1 || age > 20*60*60*1000 ) {
+			requestToken(channelKey, tokenReceived);
+		} else {
+			openChannel(token, onOpened, onMessage, onError, onClose);
+		}
+	}
+
+
+	function tokenReceived(channelKey, token, tokenAge) {
+		tokenTimestamp = new Date().getTime()-tokenAge;
+
+		localStorage.setItem("token-"+channelKey, token);
+		localStorage.setItem("timestamp-"+channelKey, tokenTimestamp);
+		openChannel(token, onOpened, onMessage, onError, onClose);
+	}
+
+
+	onOpened = function() {
+  		console.log("opened");
+  		
+		var data = {};
+  		
+  		data.videoid = getParameter(location.search, 'videoid');
+  		
+  		console.log(data.videoid);
+  		
+		mySendMessage(JSON.stringify(data));
+  		
+	};
+
+	onMessage = function (msg) {
+		console.log("Received channel message: " + msg.data );
+
+	};
+
+	onError = function() {
+		localStorage.setItem("token-"+channelKey, "");
+		console.log("Error");
+	}
+
+	onClose = function() {
+		console.log("Close");
+	}
+
+ function getParameter(url, name) {
+    var urlparts = url.split('?');
+    if (urlparts.length > 1) {
+        var parameters = urlparts[1].split('&');
+        for (var i = 0; i < parameters.length; i++) {
+            var paramparts = parameters[i].split('=');
+            if (paramparts.length > 1 && unescape(paramparts[0]) == name) {
+                return unescape(paramparts[1]);
+            }
+        }
+    }
+    return null;
+}
+	
+</script>
+
+<style>
+body,html{
+	height: 100%;
+}
+#qr {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	margin-left:-150px;
+	margin-top:-150px;
+}
+
+#qr img{
+image-rendering: -moz-crisp-edges;
+    image-rendering: -o-crisp-edges;
+    image-rendering: -webkit-optimize-contrast;
+    -ms-interpolation-mode: nearest-neighbor;
+	width: 300px;
+	height: 300px;
+}
+
+#canvasdiv {
+	border: 1px solid black;
+	width: 100%;
+	height: 100%;
+}
+</style>
+</head>
+
+<body onload="load()">
+
+<div>
+	<h2>Your video will play in a few moments</h2>
+	
+</div>
+
+
+</body>
+</html>

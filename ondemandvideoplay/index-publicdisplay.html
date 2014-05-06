@@ -1,0 +1,98 @@
+<html>
+<head>
+<meta charset="UTF-8">
+<script src="https://code.jquery.com/jquery.js"></script>
+<script src="appScript.js"></script>
+<script type="text/javascript" src="http://web-channel.appspot.com/_ah/channel/jsapi"></script>
+
+<script type="text/javascript" src="http://web-channel.appspot.com/channel.js"></script>
+<script src="http://www.google.com/jsapi" type="text/javascript"></script>
+<script src="ondemandvideo.js?a" type="text/javascript"></script>
+
+    <script type="text/javascript">
+      google.load("swfobject", "2.1");
+    </script>    
+    
+    <script type="text/javascript">
+      /*
+       * Change out the video that is playing
+       */
+      
+      // Update a particular HTML element with a new value
+      function updateHTML(elmId, value) {
+        document.getElementById(elmId).innerHTML = value;
+      }
+      
+      // Loads the selected video into the player.
+      function loadVideo(id) {
+        
+        console.log("Loading video: " + id);
+        if(ytplayer) {
+          ytplayer.loadVideoById(id);
+        }
+      }
+      
+      // This function is called when an error is thrown by the player
+      function onPlayerError(errorCode) {
+        console.log("An error occured of type:" + errorCode);
+        
+        //TODO: ask the public display to hide me.
+      }
+      
+      // This function is automatically called by the player once it loads
+      function onYouTubePlayerReady(playerId) {
+      	console.log("onYouTubePlayerReady");
+        ytplayer = document.getElementById("ytPlayer");
+        ytplayer.addEventListener("onError", "onPlayerError");
+      }
+      
+      // The "main method" of this sample. Called when someone clicks "Run".
+      function loadPlayer() {
+      	console.log("loadPlayer");
+        // The video to load
+        var videoID = "ylLzyHk54Z0"
+        // Lets Flash from another domain call JavaScript
+        var params = { allowScriptAccess: "always" };
+        // The element id of the Flash embed
+        var atts = { id: "ytPlayer" };
+        // All of the magic handled by SWFObject (http://code.google.com/p/swfobject/)
+        swfobject.embedSWF("http://www.youtube.com/v/" + videoID + 
+                           "?version=3&enablejsapi=1&playerapiid=player1", 
+                           "videoDiv", "100%", "100%", "9", null, null, params, atts);
+      }
+      function _run() {
+        loadPlayer();
+      }
+      
+      google.setOnLoadCallback(_run);
+      
+    </script>
+    
+<script  type="text/javascript">
+
+
+	
+</script>
+
+<style>
+body,html{
+	height: 100%;
+	padding:0px;
+	margin:0px;
+	overflow:hidden;
+}
+
+
+#videoDiv {
+	width: 100%;
+	height: 100%;
+}
+</style>
+</head>
+
+<body >
+<div id="videoDiv">Loading...</div>
+
+
+</body>
+</html>
