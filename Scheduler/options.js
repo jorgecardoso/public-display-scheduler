@@ -24,12 +24,16 @@ $(document).ready(function() {
 	});
 
 	document.getElementById("buttonRemoveApp").addEventListener("click", function(){
-		var selectedApp = table.row('.selected');
-		var data = selectedApp.data();
-		var appId = data[0];
+		var confirmation = confirm("Are you sure you want to delete this application ?");
 
-		backgroundPage.removeApp(appId);
-		table.row('.selected').remove().draw(false);
+		if(confirmation === true){
+			var selectedApp = table.row('.selected');
+			var data = selectedApp.data();
+			var appId = data[0];
+
+			backgroundPage.removeApp(appId);
+			table.row('.selected').remove().draw(false);
+		}
 	});
 
 	document.getElementById("buttonUpdateApp").addEventListener("click", function(){
@@ -49,10 +53,11 @@ $(document).ready(function() {
 		document.getElementById('inputUpdatedName').value = appName;
 		document.getElementById('UpdatedBackgroundApp').value = appBck;
 		
-		document.getElementById('appInfo').style.display = 'block';
+		document.getElementById('divAppOptionsAdd').style.display = 'none';
+		document.getElementById('divAppOptionsUpdate').style.display = 'block';
 	});
 
-	document.getElementById("buttonSendUpdate").addEventListener("click", function(){
+	document.getElementById("buttonUpdate").addEventListener("click", function(){
 		var updatedValues = [];
 
 		var selectedApp = table.row('.selected');
@@ -91,7 +96,8 @@ $(document).ready(function() {
 
 		selectedApp.data(updatedValues);
 
-		document.getElementById('appInfo').style.display = 'none';	
+		document.getElementById('divAppOptionsUpdate').style.display = 'none';
+		document.getElementById('divAppOptionsAdd').style.display = 'block';		
 	});
 
 	$('#appsInfoTable tbody').on('click', 'tr', function(){

@@ -23,6 +23,59 @@ function printRedMsg(type, message, arg){
 	console.log("%c%s | %s | %s %s", "color: red", time, type, message, arg);
 }
 
+//get all opened tabs in scheduler's window
+function getTabs(){
+	chrome.tabs.query({}, function(tabs){
+		for(var i = 0; i < tabs.length; i++){
+			openedTabs.push(tabs[i].id);
+		}
+	});
+}
+
+//close all tabs in "arrayOfIds"
+function closeTabs(arrayOfIds){
+	for(var i = 0; i < arrayOfIds.length; i++){
+		chrome.tabs.remove(arrayOfIds);
+	}
+}
+
+function closeScheduler(){
+	var pausedApplications = [];
+
+	timerPauseRequest.removeTimer();
+	timerPause.removeTimer();
+	clearTimeout(giveMeMoreTimeTimer);
+
+	if(pausedApps.length > 0){
+		for(var i = 0; i < pausedApps.length; i++){
+			pausedApplications.push(pausedApps[i]);
+			pausedApps.splice(i,1);
+			printCommunicationMsg("Scheduler", ">> Sending", [pausedApps[i].url, messageOnUnload, ""]);
+			chrome.tabs.sendMessage(tabs[i].id, {state: messageOnUnload, url: pausedApps[i].url});
+		}
+	}
+
+	chrome.tabs.query({}, function(tabs){
+		for(var i = 0; i < tabs.length; i++){
+			if(tabs[i].id === currentTabId){
+				printCommunicationMsg("Scheduler", ">> Sending", [tabs[i].url, messageOnPause, ""]);
+				chrome.tabs.sendMessage(tabs[i].id, {state: messageOnPause, url: tabs[i].url});
+			}
+			else{
+				printCommunicationMsg("Scheduler", ">> Sending", [tabs[i].url, messageOnDestroy, ""]);
+				chrome.tabs.sendMessage(tabs[i].id, {state: messageOnDestroy, url: tabs[i].url});				
+			}
+		}
+	})
+}
+
+function removeAppFromPausedArray(app){
+	for(var i = 0; i < pausedApps.length; i++){
+		if(pausedApps[i].id === app.id)
+			pausedApps.splice(i,1);
+	}
+}
+
 function updateSchedule(schedule){
 	//if current app is a "showMe" app
 	var currentApp = schedule[schedule.length-1];
@@ -87,11 +140,9 @@ function pickLastApp(schedule){
 
 	//if the last application is currently running
 	if(lastApp.id === penultimateApp.id){
-		console.log("Second check!");
 		return schedule[schedule.length - 3];
 	}
 	else{
-		console.log("Third check!");
 		return penultimateApp;
 	}
 }

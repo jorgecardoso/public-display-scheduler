@@ -3,6 +3,7 @@
 	<title>Scheduler Options</title>
 	<script src="jquery.js"></script>
 	<script src="options.js"></script>
+	<link rel="stylesheet" type="text/css" href="style.css">
 	<!-- DataTables CSS -->
 	<link rel="stylesheet" type="text/css" href="jquery.dataTables.css">	  
 	<!-- DataTables -->
@@ -10,71 +11,106 @@
 </head>
 
 <body>
-	<h1>Options</h1>
-	<h2>Add a new application</h2>
+	<div id="header">
+		<h1> >> SCHEDULER OPTIONS << </h2>
+	</div>
+	<div id="divOptions">
+		<div id="divAppList">
+			<h2 class="subtitle">List of applications</h2>
+			<table id="appsInfoTable" class="display" cellspacing="0" width="100%">
+		        <thead>
+		            <tr>
+		            	<th>ID</th>
+		                <th>Name</th>
+		                <th>URL</th>
+		                <th>Duration</th>
+		                <th>Priority</th>
+		                <th>Background</th>
+		            </tr>
+		        </thead>
+		    </table>
 
-	<form id="addNewApp">
-		Application name:
-		<input type="text" id="inputAppName" name="appName">
-		<br> 
-		Application URL:
-		<input type="text" id="inputAppUrl" name="appUrl">
-		<br>
-		Application Duration:
-		<input type="text" id="inputAppDuration" name="appDuration">
-		<br>
-		Application Priority:
-		<input type="text" id="inputAppPriority" name="appPriority">
-		<br>
-		Is it a background application:
-		<select id="ddmBackgroundApp">
-		  <option value="true"> Yes </option>
-		  <option value="false"> No </option>
-		</select>
-	</form>
-	<button id="buttonAddApp">Add!</button>
+		    <div id="divButtonsRemoveUpdate">
+			    <button id="buttonRemoveApp" class="button"> Remove selected app </button>
+			    <button id="buttonUpdateApp" class="button"> Update selected app </button>
+			</div>
+		</div>
 
-	<h2>Current applications</h2>
-	<table id="appsInfoTable" class="display" cellspacing="0" width="100%">
-        <thead>
-            <tr>
-            	<th>ID</th>
-                <th>Name</th>
-                <th>URL</th>
-                <th>Duration</th>
-                <th>Priority</th>
-                <th>Background</th>
-            </tr>
-        </thead>
-    </table>
+		<div id="divAppOptionsAdd">
+			<h2 class="subtitle">Add a new application</h2>
+			<form id="addNewApp">
+				<div class="field">
+					<label for="inputAppName">Application name:</label>
+					<input type="text" id="inputAppName" name="appName">
+				</div>
 
-    <button id="buttonRemoveApp"> Remove selected app </button>
-    <button id="buttonUpdateApp"> Update selected app </button>
+				<div class="field">
+					<label for="inputAppUrl">Application URL:</label>
+					<input type="text" id="inputAppUrl" name="appUrl">
+				</div>
 
-    <div id="appInfo" style="display: none;">
-    	<h2> Update application </h2>
-		<form id="updateApp">
-			Application name:
-			<input type="text" id="inputUpdatedName" name="appName">
-			<br> 
-			Application URL:
-			<input type="text" id="inputUpdatedUrl" name="appUrl">
-			<br>
-			Application Duration:
-			<input type="text" id="inputUpdatedDuration" name="appDuration">
-			<br>
-			Application Priority:
-			<input type="text" id="inputUpdatedPriority" name="appPriority">
-			<br>
-			Is it a background application:
-			<select id="UpdatedBackgroundApp">
-			  <option value="true"> Yes </option>
-			  <option value="false"> No </option>
-			</select>
-		</form>	
+				<div class="field">
+					<label for="inputAppDuration">Application duration:</label>
+					<input type="text" id="inputAppDuration" name="appDuration">
+				</div>
 
-		<button id="buttonSendUpdate"> Update app! </button>
-    </div>
+				<div class="field">
+					<label for="inputAppPriority">Application priority:</label>
+					<input type="text" id="inputAppPriority" name="appPriority">
+				</div>
+
+				<div class="field">
+						<label for="ddmBackgroundApp"> Background application ?</label>
+						<select id="ddmBackgroundApp">
+						  <option value="true"> Yes </option>
+						  <option value="false"> No </option>
+						</select>
+					</form>
+				</div>
+			</form>
+
+			<div id="divButtonAdd">
+				<button class="button" id="buttonAddApp">Add application</button>
+			</div>
+		</div>
+
+		<div id="divAppOptionsUpdate" style="display: none;">
+	    	<h2 class="subtitle">Update application</h2>
+			<form id="updateApp">
+				<div class="field">
+					<label for="inputUpdatedName">Application name:</label>
+					<input type="text" id="inputUpdatedName" name="appName">
+				</div>
+
+				<div class="field">
+					<label for="inputUpdatedUrl"> Application URL: </label>
+					<input type="text" id="inputUpdatedUrl" name="appUrl">
+				</div>
+
+				<div class="field">
+					<label for="inputUpdatedDuration"> Application duration: </label>
+					<input type="text" id="inputUpdatedDuration" name="appDuration">
+				</div>
+
+				<div class="field">
+					<label for="inputUpdatedPriority"> Application priority: </label>
+					<input type="text" id="inputUpdatedPriority" name="appPriority">
+				</div>
+
+				<div class="field">
+					<label for="UpdatedBackgroundApp"> Background application ? </label>
+					<select id="UpdatedBackgroundApp">
+						<option value="true"> Yes </option>
+						<option value="false"> No </option>
+					</select>
+				</div>
+			</form>	
+
+			<div id="divButtonUpdate">
+				<button id="buttonUpdate" class="button"> Update application </button>
+			</div>
+	    </div>
+	</div>
 </body>
 
 </html>

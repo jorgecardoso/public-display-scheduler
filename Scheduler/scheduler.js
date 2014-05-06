@@ -31,6 +31,8 @@ var windowId;
 var openedApps = 0;
 var numMaxTabs = 4;
 var schedulerActiveTab;
+var openedTabs = [];
+var closeSchedFlag = false;
 
 //flags
 var firstRunFlag = true;
@@ -52,7 +54,10 @@ var openOptions = function optionsPage(){
 }
 
 var stopScheduler = function stop(){
-
+	firstRunFlag = true;
+	closeSchedFlag = true;
+	printSimpleMsg("SCHEDULER", "Stoping...","");
+	closeScheduler();
 }
 
 function addNewApp(name,url,duration,priority,background){
@@ -102,6 +107,9 @@ var startScheduler = function starting(){
 
 	//load all background apps in inactive tabs
 	loadBckApps(applications);
+
+	//close all tabs opened in the window before starting the scheduler
+	closeTabs(openedTabs);
 
 	//get 1st application
 	var app = schedule[0];
@@ -153,6 +161,9 @@ function loadApp(app){
 }
 
 function resumeApp(app){
+	//when resuming an application, remove it from "pausedApps" array
+	removeAppFromPausedArray(app);
+
 	printSimpleMsg("SCHEDULER", "Resuming app", app.url );
 
 	//resume paused application
@@ -226,6 +237,9 @@ function resumeApp(app){
 function main(){
 	//get initial schedule with all regular apps
 	schedule = initialSchedule(applications);
+
+	//get all tabs opened in window before scheduler starts
+	getTabs();
 
 	//everytime a tab is removed, id is removed from hashtable "tabIdToURL"
 	chrome.tabs.onRemoved.addListener(function(tabId) {
@@ -328,7 +342,6 @@ function main(){
 
 			case "created":
 				openedApps = Object.keys(tabIdToAppInfo).length;
-				console.log("OPENED APPS: " + openedApps);
 
 				if(openedApps > numMaxTabs){
 					var lastApp = pickLastApp(schedule);
@@ -350,6 +363,13 @@ function main(){
 					}
 				}
 
+			break;
+
+			case "createdAfterUnload":
+				if (closeSchedFlag === true) {
+					printCommunicationMsg("Scheduler", ">> Sending", [url, messageOnDestroy, ""]);
+					chrome.tabs.sendMessage(id, {state: messageOnDestroy, url: url});
+				};
 			break;
 
 			case "loaded":
@@ -463,8 +483,14 @@ function main(){
 					chrome.tabs.sendMessage(id, {state: messageOnUnload, url: url});
 				}
 				else{
+					var app = getAppFromTabId(applications,id);
+					pausedApps.push(app);
 					//console.log("application is paused therefore it shouldn't be unload yet!!!");
 				}
+			break;
+
+			case "unloaded":
+
 			break;
 
 			case "destroyReady":

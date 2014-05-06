@@ -84,6 +84,11 @@ document.addEventListener('msgFromAppScript', function(data) {
 	      	chrome.extension.sendMessage({state : state});
 		break;
 
+		case "createdAfterUnload":
+			printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
+	      	chrome.extension.sendMessage({state : state});		
+		break;
+
 		case "destroyReady":
 			printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
 	      	chrome.extension.sendMessage({state : state});		
