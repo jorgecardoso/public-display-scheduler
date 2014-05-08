@@ -1,80 +1,106 @@
-function timeStamp() {
-// Create a date object with the current time
-  var now = new Date();
- 
-// Create an array with the current hour, minute and second
-  var time = [ now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds() ];
- 
-// Convert hour from military time
-  time[0] = ( time[0] < 12 ) ? time[0] : time[0] - 12;
- 
-// If hour is 0, set it to 12
-  time[0] = time[0] || 12;
- 
-// If seconds and minutes are less than 10, add a zero
-  for ( var i = 1; i < 3; i++ ) {
-    if ( time[i] < 10 ) {
-      time[i] = "0" + time[i];
-    }
-  }
- 
-// Return the formatted string
-  return  time.join(":");
-}
-
 sendMessageToExtensionScript = function sendMessageToEs(){
 	var event = createEventWithState(state);
-	var time = timeStamp();
-	console.log(time + " | MESSAGES AppScript | >> Sending message <" + event.detail.state + "> to extensionScript of (" + url + ")" );	
+	printCommunicationMsg("appScript", ">> Sending", [url, event.detail.state, ""]);
 	document.dispatchEvent(event); 
 }
 
 sendMessageToExtensionScriptExtraTime = function sendMessagetoEsTime(){
 	var event = createEventWithStateTime(state,time);
-	var timeArrival = timeStamp();
-	console.log(timeArrival + " | MESSAGES AppScript | >> Sending message <" + event.detail.state + " , " + time + "> to extensionScript (" + url + ")" );	
+	printCommunicationMsg("appScript", ">> Sending", [url, event.detail.state, time]);
 	document.dispatchEvent(event); 	
 }
 
-function onCreateAux(callback){
-	var time = timeStamp();
-	console.log(time + " | LIFECYCLE | onCreateAux of " + url + " is running..." );
+function onCreateAux(created){
+	printSimpleMsg("LIFECYCLE", "onCreateAux", url);
 	state = "created";
-	onCreate(callback);
+	
+	try{
+		onCreate();
+		created();
+	}
+	catch(err){
+		printRedMsg("ERROR", err, "onCreate is not defined");
+		created();
+	}
 }
 
-function onLoadAux(callback){
-	console.log("LIFECYCLE | onLoadAux of " + url + " is running..." );
+function onLoadAux(loaded){
+	printSimpleMsg("LIFECYCLE", "onLoadAux", url);
 	state = "loaded";
-	onLoad(callback);
+	
+	try{
+		onLoad(loaded);
+	}
+	catch(err){
+		printRedMsg("ERROR", err, "onLoad is not defined");
+		loaded();
+	}
 }
 
 function onResumeAux(){
-	console.log("LIFECYCLE | onResumeAux of " + url + " is running...");
-	onResume();
+	printSimpleMsg("LIFECYCLE", "onResumeAux", url);
+	
+	try{
+		onResume();
+	}
+	catch(err){
+		printRedMsg("ERROR", err, "onResume is not defined");	
+	}
 }
 
-function onPauseRequestAux(callback){
-	console.log("LIFECYCLE | onPauseRequestAux " + url + " is running...");
+function onPauseRequestAux(pauseReady){
+	printSimpleMsg("LIFECYCLE", "onPauseRequestAux", url);
 	state = "pauseReady";
-	onPauseRequest(callback);
+	
+	try{
+		time = onPauseRequest();
+		pauseReady();
+	}
+	catch(err){
+		printRedMsg("ERROR", err, "onPauseRequest is not defined");
+		time = 0;
+		pauseReady();
+	}
 }
 
-function onPauseAux(callback){
-	console.log("LIFECYCLE | onPauseAux " + url + " is running...");
+function onPauseAux(paused){
+	printSimpleMsg("LIFECYCLE", "onPauseAux", url);
 	state = "paused";
-	onPause(callback);
+	
+	try{
+		onPause();
+		paused();
+	}
+	catch(err){
+		printRedMsg("ERROR", err, "onPause is not defined");
+		paused();
+	}
 }
 
-function onUnloadAux(){
-	console.log("LIFECYCLE | onUnloadAux " + url + " is running...");
-	onUnload();
+function onUnloadAux(created){
+	printSimpleMsg("LIFECYCLE", "onUnloadAux", url);
+	state = "createdAfterUnload";
+	
+	try{
+		onUnload();
+		created();
+	}
+	catch(err){
+		printRedMsg("ERROR", err, "onUnload is not defined");
+		created();		
+	}
 }
 
-function onDestroyAux(callback){
-	console.log("LIFECYCLE | onDestroyAux " + url + " is running...");
-	//state = "not_loaded";
-	onDestroy(callback);
+function onDestroyAux(destroyReady){
+	printSimpleMsg("LIFECYCLE", "onDestroyAux", url);
+	state = "destroyReady";
+	
+	try{
+		onDestroy(destroyReady);
+	}catch(err){
+		printRedMsg("ERROR", err, "onDestroy is not defined");	
+		destroyReady();
+	}
 }
 
 function showMe(){
@@ -121,41 +147,40 @@ function messageReceived(event){
 	var state = event.data.state;
 	var origin = event.origin;
 	var originUrl = event.source.url;
-	var time = timeStamp();
 	
 	switch(state){
 		case "onCreate":
-			console.log(time + " | MESSAGES AppScript | << Receiving message <" + state + "> from extensionScript (" + originUrl + ")");
+			printCommunicationMsg("appScript", "<< Receiving", [originUrl, state, ""]);
 			onCreateAux(sendMessageToExtensionScript);
 			break;
 
 		case "onLoad":
-			console.log(time + " | MESSAGES AppScript | << Receiving message <" + state + "> from extensionScript (" + originUrl + ")");
+			printCommunicationMsg("appScript", "<< Receiving", [originUrl, state, ""]);
 			onLoadAux(sendMessageToExtensionScript);
 			break;
 			
 		case "onResume":
-			console.log(time + " | MESSAGES AppScript | << Receiving message <" + state + "> from extensionScript (" + originUrl + ")");
+			printCommunicationMsg("appScript", "<< Receiving", [originUrl, state, ""]);
 			onResumeAux();
 			break;
 			
 		case "onPauseRequest":
-			console.log(time + " | MESSAGES AppScript | << Receiving message <" + state + "> from extensionScript (" + originUrl + ")");
+			printCommunicationMsg("appScript", "<< Receiving", [originUrl, state, ""]);
 			onPauseRequestAux(sendMessageToExtensionScriptExtraTime);
 			break;
 			
 		case "onPause":
-			console.log(time + " | MESSAGES AppScript | << Receiving message <" + state + "> from extensionScript (" + originUrl + ")");
+			printCommunicationMsg("appScript", "<< Receiving", [originUrl, state, ""]);
 			onPauseAux(sendMessageToExtensionScript);
 			break;
 
 		case "onUnload":
-			console.log(time + " | MESSAGES AppScript | << Receiving message <" + state + "> from extensionScript (" + originUrl + ")");
+			printCommunicationMsg("appScript", "<< Receiving", [originUrl, state, ""]);
 			onUnloadAux(sendMessageToExtensionScript);
 			break;	
 
 		case "onDestroy":
-			console.log(time + " | MESSAGES AppScript | << Receiving message <" + state + "> from extensionScript (" + originUrl + ")");
+			printCommunicationMsg("appScript", "<< Receiving", [originUrl, state, ""]);
 			onDestroyAux(sendMessageToExtensionScript);
 			break;		
 	}	
@@ -172,4 +197,45 @@ $(document).ready(function() {
 	//listen messages from extensionScript.js
 	window.addEventListener("message", messageReceived);
 	url = document.URL;
-});   
+}); 
+
+// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< AUXILIAR FUNCTIONS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 
+
+function timeStamp() {
+// Create a date object with the current time
+  var now = new Date();
+ 
+// Create an array with the current hour, minute and second
+  var time = [ now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds() ];
+ 
+// Convert hour from military time
+  time[0] = ( time[0] < 12 ) ? time[0] : time[0] - 12;
+ 
+// If hour is 0, set it to 12
+  time[0] = time[0] || 12;
+ 
+// If seconds and minutes are less than 10, add a zero
+  for ( var i = 1; i < 3; i++ ) {
+    if ( time[i] < 10 ) {
+      time[i] = "0" + time[i];
+    }
+  }
+ 
+// Return the formatted string
+  return  time.join(":");
+}
+
+function printSimpleMsg(type, state, url){
+	var time = timeStamp();
+	console.log("%s | %s | %s of %s is running...", time, type, state, url);
+}
+
+function printCommunicationMsg(from, message, arg){
+	var time = timeStamp();
+	console.log("%c%s | COMMUNICATION %s | %s %s < %s %s>", "color: green ", time, from, arg[0], message, arg[1], arg[2]);
+}
+
+function printRedMsg(type, message, arg){
+	var time = timeStamp();
+	console.log("%c%s | %s | %s %s", "color: red", time, type, message, arg);
+}

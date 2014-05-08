@@ -52,7 +52,7 @@ function onPause(){
 
 }
 
-function onUnload(unloadReady){
+function onUnload(){
     //clean template data
     document.getElementById("eventTime").innerHTML= '';
     document.getElementById("eventLocation").innerHTML= '';

@@ -3,17 +3,13 @@ function onCreate(){
 	var time = timeStamp();
 	console.log(time + " | LIFECYCLE | onCreate of " + url + " is running...");
 
-	setTimeout(function(){
-		document.getElementById("onCreateText").value='onCreate';
-	},3000);
+	document.getElementById("onCreateText").value='onCreate';
 }
 
 function onLoad(loaded){
 	console.log("LIFECYCLE | onLoad of " + url + " is running...");
 
-	setTimeout(function(){
-		document.getElementById("onLoadText").value='onLoad';
-	},3000);
+	document.getElementById("onLoadText").value='onLoad';
 	
 	setTimeout(function(){
 		loaded();
@@ -23,9 +19,7 @@ function onLoad(loaded){
 function onResume(){
 	console.log("LIFECYCLE | onResume of " + url + " is running...");
 
-	setTimeout(function(){
-		document.getElementById("onResumeText").value='onResume';
-	},3000);
+	document.getElementById("onResumeText").value='onResume';
 
 	setTimeout(function(){
 		showMe();
@@ -35,19 +29,15 @@ function onResume(){
 function onPauseRequest(){
 	console.log("LIFECYCLE | onPauseRequest of " + url + " is running...");
 
-	setTimeout(function(){
-		document.getElementById("onPauseRequestText").value='onPauseRequest';
-	},3000);
+	document.getElementById("onPauseRequestText").value='onPauseRequest';
 
 	return 0;
 }
 
 function onPause(){
 	console.log("LIFECYCLE | onPause of " + url + " is running...");
-
-	setTimeout(function(){
-		document.getElementById("onPauseText").value='onPause';	
-	},3000);
+	
+	document.getElementById("onPauseText").value='onPause';	
 }
 
 function onUnload(){

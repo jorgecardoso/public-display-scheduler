@@ -13,44 +13,94 @@ sendMessageToExtensionScriptExtraTime = function sendMessagetoEsTime(){
 function onCreateAux(created){
 	printSimpleMsg("LIFECYCLE", "onCreateAux", url);
 	state = "created";
-	onCreate();
-	created();
+	
+	try{
+		onCreate();
+		created();
+	}
+	catch(err){
+		printRedMsg("ERROR", err, "onCreate is not defined");
+		created();
+	}
 }
 
 function onLoadAux(loaded){
 	printSimpleMsg("LIFECYCLE", "onLoadAux", url);
 	state = "loaded";
-	onLoad(loaded);
+	
+	try{
+		onLoad(loaded);
+	}
+	catch(err){
+		printRedMsg("ERROR", err, "onLoad is not defined");
+		loaded();
+	}
 }
 
 function onResumeAux(){
 	printSimpleMsg("LIFECYCLE", "onResumeAux", url);
-	onResume();
+	
+	try{
+		onResume();
+	}
+	catch(err){
+		printRedMsg("ERROR", err, "onResume is not defined");	
+	}
 }
 
 function onPauseRequestAux(pauseReady){
 	printSimpleMsg("LIFECYCLE", "onPauseRequestAux", url);
 	state = "pauseReady";
-	time = onPauseRequest();
-	pauseReady();
+	
+	try{
+		time = onPauseRequest();
+		pauseReady();
+	}
+	catch(err){
+		printRedMsg("ERROR", err, "onPauseRequest is not defined");
+		time = 0;
+		pauseReady();
+	}
 }
 
 function onPauseAux(paused){
 	printSimpleMsg("LIFECYCLE", "onPauseAux", url);
 	state = "paused";
-	onPause();
-	paused();
+	
+	try{
+		onPause();
+		paused();
+	}
+	catch(err){
+		printRedMsg("ERROR", err, "onPause is not defined");
+		paused();
+	}
 }
 
-function onUnloadAux(){
+function onUnloadAux(created){
 	printSimpleMsg("LIFECYCLE", "onUnloadAux", url);
-	onUnload();
+	state = "createdAfterUnload";
+	
+	try{
+		onUnload();
+		created();
+	}
+	catch(err){
+		printRedMsg("ERROR", err, "onUnload is not defined");
+		created();		
+	}
 }
 
 function onDestroyAux(destroyReady){
 	printSimpleMsg("LIFECYCLE", "onDestroyAux", url);
 	state = "destroyReady";
-	onDestroy(destroyReady);
+	
+	try{
+		onDestroy(destroyReady);
+	}catch(err){
+		printRedMsg("ERROR", err, "onDestroy is not defined");	
+		destroyReady();
+	}
 }
 
 function showMe(){
@@ -126,7 +176,7 @@ function messageReceived(event){
 
 		case "onUnload":
 			printCommunicationMsg("appScript", "<< Receiving", [originUrl, state, ""]);
-			onUnloadAux();
+			onUnloadAux(sendMessageToExtensionScript);
 			break;	
 
 		case "onDestroy":

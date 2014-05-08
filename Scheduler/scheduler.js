@@ -29,7 +29,7 @@ var extraTime;
 var extraTimeMiliseconds;
 var windowId;
 var openedApps = 0;
-var numMaxTabs = 4;
+var numMaxTabs = 10;
 var schedulerActiveTab;
 var openedTabs = [];
 var closeSchedFlag = false;
@@ -42,11 +42,12 @@ var pausedFlag = false;
 
 //hardcoded schedules
 var applications = [
-{id: 0, name: "Chuck Norris Jokes", url: "http://localhost/05_03_simpleAppJoke/", duration: 15, priority: 2, background: false, showMe: false, paused: false, opr: false},
-{id: 1, name: "Calendar", url: "http://localhost/05_03_simpleAppCalendar/", duration: 20, priority: 1, background: true, showMe: false, paused: false, opr: false},
 {id: 2, name: "Youtube Video", url: "http://localhost/05_03_simpleAppVideo2/", duration: 30, priority: 3, background: false, showMe: false, paused: false, opr: false},
-{id: 3, name: "Simple Bck App", url:"http://localhost/05_03_simpleBackgroundApp/", duration: 10, priority: 2, background: true, showMe: false, paused: false, opr: false},
-{id: 4, name: "Lifecycle App", url: "http://localhost/05_03_simpleApp/", duration: 30, priority: 3, background: false, showMe: false, paused: false, opr: false},
+{id: 0, name: "No lifecycle app", url: "http://localhost/05_03_noLifecycleApp/", duration: 15, priority: 2, background: false, showMe: false, paused: false, opr: false},
+{id: 1, name: "Calendar", url: "http://localhost/05_03_simpleAppCalendar/", duration: 20, priority: 1, background: true, showMe: false, paused: false, opr: false},
+{id: 3, name: "Simple Bck App", url:"http://localhost/05_03_simpleBackgroundApp/", duration: 10, priority: 1, background: true, showMe: false, paused: false, opr: false},
+{id: 4, name: "On demand video", url: "http://ecra.pt/ondemandvideoplay/index-publicdisplay.html", duration: 30, priority: 3, background: true, showMe: false, paused: false, opr: false},
+{id: 5, name: "Simple App", url:"http://localhost/05_03_simpleApp/", duration: 20, priority: 1, background: false, showMe: false, paused: false, opr: false},
 ];
 
 var openOptions = function optionsPage(){
@@ -109,7 +110,7 @@ var startScheduler = function starting(){
 	loadBckApps(applications);
 
 	//close all tabs opened in the window before starting the scheduler
-	closeTabs(openedTabs);
+	//closeTabs(openedTabs);
 
 	//get 1st application
 	var app = schedule[0];
@@ -352,7 +353,6 @@ function main(){
 					chrome.tabs.sendMessage(tabId, {state: messageOnDestroy, url: lastApp.url});
 				}
 
-
 				var app = getAppFromTabId(applications,id);
 				createdApps.push(app);
 
@@ -468,29 +468,26 @@ function main(){
 				}
 			break;
 
-			case "paused":				
+			case "paused":	
+				printArray(schedule, "I JUST ARRIVED AT PAUSED!!!!!!!!!!!!!!!!!!!!");
+
 				if(pausedFlag === true){
+					console.log("PAUSED FLAG TRUEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE");
 					schedule[schedule.length-1].paused = true;
 					pausedFlag = false;
-				}
-				
-				//if the current application was not interrupted
-				if(schedule[schedule.length-1].paused === false){
-					//change onPauseRequest flag to false
-					schedule[schedule.length-1].opr = false;
-					//send onUnload message
-					printCommunicationMsg("Scheduler", ">> Sending", [url, messageOnUnload, ""]);
-					chrome.tabs.sendMessage(id, {state: messageOnUnload, url: url});
-				}
-				else{
+
 					var app = getAppFromTabId(applications,id);
 					pausedApps.push(app);
 					//console.log("application is paused therefore it shouldn't be unload yet!!!");
 				}
-			break;
-
-			case "unloaded":
-
+				else{
+					//change onPauseRequest flag to false
+					schedule[0].opr = false;
+					//send onUnload message
+					printCommunicationMsg("Scheduler", ">> Sending", [url, messageOnUnload, ""]);
+					chrome.tabs.sendMessage(id, {state: messageOnUnload, url: url});
+				}
+				
 			break;
 
 			case "destroyReady":

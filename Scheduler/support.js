@@ -39,34 +39,50 @@ function closeTabs(arrayOfIds){
 	}
 }
 
-function closeScheduler(){
-	var pausedApplications = [];
+function checkIfAppIsPaused(appId){
+	if(pausedApps.length > 0){
+		for(var i = 0; pausedApps.length; i++){
+			if(pausedApps[i].id === appId){
+				return true;
+			}
 
+			return false;
+		}
+	}
+	else{
+		return false;
+	}
+}
+
+function closeScheduler(){
 	timerPauseRequest.removeTimer();
 	timerPause.removeTimer();
 	clearTimeout(giveMeMoreTimeTimer);
 
-	if(pausedApps.length > 0){
-		for(var i = 0; i < pausedApps.length; i++){
-			pausedApplications.push(pausedApps[i]);
-			pausedApps.splice(i,1);
-			printCommunicationMsg("Scheduler", ">> Sending", [pausedApps[i].url, messageOnUnload, ""]);
-			chrome.tabs.sendMessage(tabs[i].id, {state: messageOnUnload, url: pausedApps[i].url});
-		}
-	}
+	Object.keys(tabIdToAppInfo).forEach(function (key) { 
+	    var value = tabIdToAppInfo[key];
+	    var appId = value[0];
+	    var appUrl = value[1];
+	    var tabId = parseInt(key);
 
-	chrome.tabs.query({}, function(tabs){
-		for(var i = 0; i < tabs.length; i++){
-			if(tabs[i].id === currentTabId){
-				printCommunicationMsg("Scheduler", ">> Sending", [tabs[i].url, messageOnPause, ""]);
-				chrome.tabs.sendMessage(tabs[i].id, {state: messageOnPause, url: tabs[i].url});
-			}
-			else{
-				printCommunicationMsg("Scheduler", ">> Sending", [tabs[i].url, messageOnDestroy, ""]);
-				chrome.tabs.sendMessage(tabs[i].id, {state: messageOnDestroy, url: tabs[i].url});				
-			}
-		}
-	})
+	    var paused = checkIfAppIsPaused(parseInt(appId));
+
+	    if(tabId === currentTabId){
+			printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnPause, ""]);
+			chrome.tabs.sendMessage(tabId, {state: messageOnPause, url: appUrl});	    	
+	    }
+	    else{
+
+	    	if(paused === true){
+	    		printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnUnload, ""]);
+				chrome.tabs.sendMessage(tabId, {state: messageOnUnload, url: appUrl});
+	    	}
+	    	else{
+				printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnDestroy, ""]);
+				chrome.tabs.sendMessage(tabId, {state: messageOnDestroy, url: appUrl}); 
+	    	}   	
+	    }
+	});
 }
 
 function removeAppFromPausedArray(app){
@@ -171,7 +187,7 @@ function getAppFromTabId(apps,tabId){
 	var app;
 	var appInfo = tabIdToAppInfo[tabId];
 	for(var i = 0; i < apps.length; i++){
-		if(i === appInfo[0] && apps[i].url === appInfo[1]){
+		if(apps[i].id === appInfo[0] && apps[i].url === appInfo[1]){
 			app = apps[i];
 			return app;
 		}
