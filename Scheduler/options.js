@@ -17,8 +17,13 @@ $(document).ready(function() {
 		else
 			backgroundOption = false;
 
-		backgroundPage.addNewApp(name, url, parseInt(duration), parseInt(priority), backgroundOption);
-		table.row.add([5,name,url,duration,priority,backgroundOption]).draw();
+		var biggestId = backgroundPage.getBiggestId();
+		console.log(biggestId);
+		var id = biggestId + 1;
+
+		backgroundPage.addNewApp(id, name, url, parseInt(duration), parseInt(priority), backgroundOption);
+
+		table.row.add([id,name,url,duration,priority,backgroundOption]).draw();
 		document.getElementById("addNewApp").reset();
 
 	});
@@ -30,8 +35,9 @@ $(document).ready(function() {
 			var selectedApp = table.row('.selected');
 			var data = selectedApp.data();
 			var appId = data[0];
+			var appUrl = data[2];
 
-			backgroundPage.removeApp(appId);
+			backgroundPage.removeApp(appId, appUrl);
 			table.row('.selected').remove().draw(false);
 		}
 	});

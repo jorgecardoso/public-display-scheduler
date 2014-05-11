@@ -40,19 +40,41 @@ function closeTabs(arrayOfIds){
 }
 
 function checkIfAppIsPaused(appId){
-	if(pausedApps.length > 0){
-		for(var i = 0; pausedApps.length; i++){
-			if(pausedApps[i].id === appId){
+	for(var i = 0; i < schedule.length-1; i++){
+		if(schedule[i].id === appId){
+			if(schedule[i].paused === true)
 				return true;
-			}
-
-			return false;
+			else
+				return false;
 		}
 	}
-	else{
+}
+
+function checkIfAppIsNext(appId){
+	if(schedule[0].id === appId)
+		return true;
+	else
 		return false;
+}
+
+function turnRemoveMeTrue(appId){
+	for(var i = 0; i < schedule.length; i++){
+		if(schedule[i].id === appId)
+			schedule[i].removeMe = true;
 	}
 }
+
+/*function checkIfPaused(appId){
+	var result = false;
+	for(var i = 0; i < schedule.length; i++){
+		if(schedule[i].paused === true){
+			if(schedule[i].id === appId)
+				result = true;
+		}
+	}
+
+	return result;
+}*/
 
 function closeScheduler(){
 	timerPauseRequest.removeTimer();
@@ -85,13 +107,6 @@ function closeScheduler(){
 	});
 }
 
-function removeAppFromPausedArray(app){
-	for(var i = 0; i < pausedApps.length; i++){
-		if(pausedApps[i].id === app.id)
-			pausedApps.splice(i,1);
-	}
-}
-
 function updateSchedule(schedule){
 	//if current app is a "showMe" app
 	var currentApp = schedule[schedule.length-1];
@@ -122,6 +137,9 @@ function initialSchedule(apps){
 	for (var i = 0; i < apps.length; i++){
 		if(apps[i].background === false)
 			schedule.push(apps[i]);
+		else{
+			backgroundApps.push(apps[i]);
+		}
 	}
 
 	return schedule;
@@ -139,7 +157,11 @@ function createApp(app,callback){
 		chrome.tabs.executeScript(tab.id, {file: "extensionScript.js", runAt: "document_end"}, function(array){
 			var appInfo = [];
 			appInfo.push(app.id);
+			console.log("APP ID: " + app.id);
 			appInfo.push(app.url);
+			console.log("APP URL: " + app.url);
+
+			console.log("TAB ID: " + tab.id);
 
 			addAppToHash(tab.id,appInfo);
 
@@ -229,12 +251,12 @@ function activateBackgroundTab(tabId,url){
 }
 
 //given an url, checks 
-function isTabCreated(url){
+function isTabCreated(id){
 	var def = $.Deferred();
 	var value = false;
 	chrome.tabs.query({}, function(tabs){
 		for(var i = 0; i < tabs.length; i++){
-			if(tabs[i].url === url){
+			if(tabs[i].id === id){
 				value = true;
 			}
 		}
@@ -306,18 +328,6 @@ function getAllShowMeApps(schedule){
 	return result;
 }
 
-function checkIfPaused(app){
-	var result = false;
-	for(var i = 0; i < schedule.length; i++){
-		if(schedule[i].paused === true){
-			if(schedule[i].id === app.id)
-				result = true;
-		}
-	}
-
-	return result;
-}
-
 function getTime(){
 	var time = new Date().getTime();
 	return time;
@@ -362,6 +372,51 @@ function getAppAirtime(times,id){
 	}
 
 	return airtime;
+}
+
+function checkRemoveMe(appId){
+	for(var i = 0; i < schedule.length; i++){
+		if(appId === schedule[i].id){
+			if(schedule[i].removeMe === true)
+				return true;
+			else
+				return false;
+		}
+	}
+}
+
+function removeAppFrom(appId, array){
+
+	if(array === "applications"){
+		for (var i = 0; i < applications.length; i++){
+			if(applications[i].id === appId){
+				applications.splice(i,1);	
+			}
+		}
+
+		printArray(applications, "APPLICATIONS ARRAY AFTER REMOVING ONE APPLICATION");
+	}
+
+	if(array === "schedule"){
+		for (var i = 0; i < schedule.length; i++){
+			if(schedule[i].id === appId){
+				schedule.splice(i,1);
+			}
+		}
+
+		printArray(schedule, "SCHDULE AFTER REMOVING ONE APPLICATION");
+	}
+}
+
+function getBiggestId(){
+	var id = 0;
+	for(var i = 0; i < applications.length; i++){
+		if(applications[i].id > id){
+			id = applications[i].id;
+		}
+	}
+
+	return id;
 }
 
 function timeStamp() {
