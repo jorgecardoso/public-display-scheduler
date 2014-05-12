@@ -156,12 +156,9 @@ function createApp(app,callback){
 
 		chrome.tabs.executeScript(tab.id, {file: "extensionScript.js", runAt: "document_end"}, function(array){
 			var appInfo = [];
-			appInfo.push(app.id);
-			console.log("APP ID: " + app.id);
-			appInfo.push(app.url);
-			console.log("APP URL: " + app.url);
 
-			console.log("TAB ID: " + tab.id);
+			appInfo.push(app.id);
+			appInfo.push(app.url);
 
 			addAppToHash(tab.id,appInfo);
 
@@ -189,9 +186,22 @@ function pickLastApp(schedule){
 function loadBckApps(apps){
 	for(var i = 0; i < apps.length; i++){
 		if(apps[i].background === true){
-			$(document).queue('bckApps', createApp(apps[i],sendOnCreateMsg));			
+			$(document).queue('bckApps', loadBckApp(apps[i])); //createApp(apps[i],sendOnCreateMsg));
 		}
 	}
+}
+
+function loadBckApp(app){
+	var bckTabId = getTabIdFromAppId(tabIdToAppInfo, app.id);
+
+	isTabCreated(bckTabId).done(function(data){
+		if(data === true){
+			printRedMsg("TABS", "This application is already created", app.url);
+		}
+		else{
+			createApp(app, sendOnCreateMsg);
+		}
+	});
 }
 
 //add an application to hash table (tabIdToAppInfo) given a table id and an url
@@ -394,7 +404,11 @@ function removeAppFrom(appId, array){
 			}
 		}
 
-		printArray(applications, "APPLICATIONS ARRAY AFTER REMOVING ONE APPLICATION");
+		if(applications.length === 0){
+			printRedMsg("SCHDULER", "There are no more applications !","");
+		}else{
+			printArray(applications, "APPLICATIONS ARRAY AFTER REMOVING ONE APPLICATION");	
+		}
 	}
 
 	if(array === "schedule"){
@@ -404,7 +418,12 @@ function removeAppFrom(appId, array){
 			}
 		}
 
-		printArray(schedule, "SCHDULE AFTER REMOVING ONE APPLICATION");
+		if(schedule.length === 0){
+			printRedMsg("SCHDULER", "Schedule is empty !","");
+		}
+		else{
+			printArray(schedule, "SCHDULE AFTER REMOVING ONE APPLICATION");
+		}
 	}
 }
 

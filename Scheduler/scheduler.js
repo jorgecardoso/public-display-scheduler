@@ -93,10 +93,6 @@ function removeApp(appId, appUrl){
 	var currentAppTabId = getTabIdFromAppId(tabIdToAppInfo, schedule[schedule.length-1].id);
 	var app = getAppFromTabId(applications, tabId);
 
-	console.log(app);
-	console.log("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< CURENT APP TAB ID: " + currentAppTabId);
-	console.log("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TAB ID: " + tabId);
-
 	if(currentAppTabId === tabId){
 		console.log("I'M THE RUNNING APPLICATION THEREFORE I'M GOING TO DO THIS: ");
 
@@ -106,7 +102,16 @@ function removeApp(appId, appUrl){
 		window.clearTimeout(giveMeMoreTimeTimer);
 
 		turnRemoveMeTrue(appId);
-		loadApp(schedule[0]);
+
+		if(schedule.length === 1){
+			printRedMsg("SCHEDULER", "There are no more applications scheduled !");
+			printCommunicationMsg("Scheduler", ">> Sending", [app.url, messageOnPause, ""]);
+			chrome.tabs.sendMessage(tabId, {state: messageOnPause, url: app.url});	
+		}
+		else{
+			loadApp(schedule[0]);			
+		}
+
 	}
 	else if(paused === true){
 		console.log("I'M PAUSED THEREFORE I'M GOING TO DO THIS: ");
@@ -175,7 +180,7 @@ function loadApp(app){
 
 
 
-	//     if tabId is undefined go to next application    //
+	//     if tabId is undefined load application again    //
 
 
 
@@ -192,7 +197,6 @@ function loadApp(app){
 	catch(err){
 		console.log(err);
 		printRedMsg("TABS", "Creating application again",schedule[0].url);
-		printArray(schedule, "UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU look at me!");
 		undefinedFlag = true;
 		createApp(schedule[0], sendOnCreateMsg);
 	}
@@ -413,10 +417,6 @@ function main(){
 				//var app = getAppFromTabId(applications,id);
 				createdApps.push(app);
 
-				console.log("<<<<<<<<<<<<<<<<<<<<<<<<  FIRST RUN FLAG: " + firstRunFlag);
-				console.log("URL INCOMING MESSAGE: " + app.id);
-				console.log("SCHEDULER [0] . URL : " + schedule[0].id);
-
 				if(firstRunFlag === true){
 					if(app.id === schedule[0].id){
 						firstRunFlag = false;
@@ -439,6 +439,12 @@ function main(){
 					printCommunicationMsg("Scheduler", ">> Sending", [url, messageOnDestroy, ""]);
 					chrome.tabs.sendMessage(id, {state: messageOnDestroy, url: url});
 				};
+
+				if(schedule.length === 1){
+					//load the only application scheduled
+					loadApp(schedule[0]);
+				}
+
 			break;
 
 			case "loaded":
@@ -472,10 +478,11 @@ function main(){
 					printRedMsg("SCHEDULER", "There is only one application scheduled !","");
 				}
 				else{		
-
-					printCommunicationMsg("Scheduler", "<< Receiving", [url, state,""]);
-					printCommunicationMsg("Scheduler", ">> Sending", [currentApp.url, messageOnPause, ""]);
-					chrome.tabs.sendMessage(currentAppTabId, {state: messageOnPause, url: currentApp.url});
+					if(schedule.length > 1){
+						printCommunicationMsg("Scheduler", "<< Receiving", [url, state,""]);
+						printCommunicationMsg("Scheduler", ">> Sending", [currentApp.url, messageOnPause, ""]);
+						chrome.tabs.sendMessage(currentAppTabId, {state: messageOnPause, url: currentApp.url});
+					}
 				}
 
 				//if the application was not interrupted
@@ -492,15 +499,17 @@ function main(){
 				timerPauseRequest = new Timer(function(){
 					var nextAppTabId  = getTabIdFromAppId(tabIdToAppInfo, schedule[0].id);
 
-					//create next application
-					isTabCreated(nextAppTabId).done(function(data){
-						if(data === true){
-							printRedMsg("TABS", "This application is already created",schedule[0].url);
-						}
-						else{
-							createApp(schedule[0],sendOnCreateMsg);
-						}
-					});
+					if(schedule.length > 1){
+						//create next application
+						isTabCreated(nextAppTabId).done(function(data){
+							if(data === true){
+								printRedMsg("TABS", "This application is already created",schedule[0].url);
+							}
+							else{
+								createApp(schedule[0],sendOnCreateMsg);
+							}
+						});
+					}
 
 					//send onPauseRequest to current application
 					printCommunicationMsg("Scheduler", ">> Sending", [url, messageOnPauseRequest, ""]);
@@ -510,14 +519,20 @@ function main(){
 
 				//when apps duration is done
 				timerPause = new Timer(function(){
-					if(schedule[0].paused === false){
-						//start loading next application
-						loadApp(schedule[0]);
+					if(schedule.length > 1){
+						if(schedule[0].paused === false){
+							//start loading next application
+							loadApp(schedule[0]);
+						}
+						else{
+							resumeApp(schedule[0]);
+						}
 					}
 					else{
-						resumeApp(schedule[0]);
+						//send onUnload to current application
+						printCommunicationMsg("Scheduler", ">> Sending", [url, messageOnPause, ""]);
+						chrome.tabs.sendMessage(id, {state: messageOnPause, url: url});						
 					}
-
 				}, (appDuration * 1000));
 
 			break;
@@ -568,10 +583,7 @@ function main(){
 
 					chrome.tabs.remove(id);
 
-					printArray(schedule, "SCHEDULE BEFORE REMOVING AN APPPLICATION ");
 					removeAppFrom(app.id, "schedule");
-
-					printArray(applications, "APPLICATIONS ARRAY BEFORE REMOVING AN APPPLICATION ");
 					removeAppFrom(app.id, "applications");					
 				}
 

@@ -57,8 +57,8 @@ $(document).ready(function() {
 		document.getElementById('inputUpdatedDuration').value = appDuration;
 		document.getElementById('inputUpdatedPriority').value = appPriority;
 		document.getElementById('inputUpdatedName').value = appName;
-		document.getElementById('UpdatedBackgroundApp').value = appBck;
-		
+		document.getElementById('ddmBackgroundApp').options[ddmBackgroundApp.selectedIndex].value = appBck;
+
 		document.getElementById('divAppOptionsAdd').style.display = 'none';
 		document.getElementById('divAppOptionsUpdate').style.display = 'block';
 	});
@@ -75,7 +75,7 @@ $(document).ready(function() {
 		var duration = document.getElementById('inputUpdatedDuration').value;
 		var priority = document.getElementById('inputUpdatedPriority').value;
 		var backgroundOption = document.getElementById("UpdatedBackgroundApp");
-		var background = ddmBackgroundApp.options[ddmBackgroundApp.selectedIndex].value;
+		var background = document.getElementById("ddmBackgroundApp").value; 
 
 		updatedValues.push(name);
 		updatedValues.push(url);
@@ -94,6 +94,7 @@ $(document).ready(function() {
 			boolBck = false;
 		}
 
+		console.log("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< BOOLEAN: " + boolBck);
 		updatedValues.push(boolBck);
 
 		backgroundPage.updateApp(appId,updatedValues);
@@ -101,6 +102,8 @@ $(document).ready(function() {
 		updatedValues.unshift(appId);
 
 		selectedApp.data(updatedValues);
+
+		selectedApp.draw();
 
 		document.getElementById('divAppOptionsUpdate').style.display = 'none';
 		document.getElementById('divAppOptionsAdd').style.display = 'block';		
