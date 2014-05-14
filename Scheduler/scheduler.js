@@ -9,7 +9,8 @@ var messageOnPause = "onPause";
 var messageOnUnload = "onUnload";
 var messageOnDestroy = "onDestroy";
 
-var schedule; 
+var schedule = []; 
+var applications = [];
 var backgroundApps = [];
 var tabIdToAppInfo = {};
 var appsAirtime = [];
@@ -34,6 +35,7 @@ var schedulerActiveTab;
 var openedTabs = [];
 
 //flags
+var runningFlag = false;
 var firstRunFlag = true;
 var firstCreatedAppFlag = true;
 var addShowMeAppFlag = false;
@@ -41,114 +43,77 @@ var pausedFlag = false;
 var closeSchedFlag = false;
 var undefinedFlag = false;
 
-//hardcoded schedules
-var applications = [
-{id: 2, name: "Youtube Video", url: "http://localhost/05_03_simpleAppVideo2/", duration: 30, priority: 3, background: false, showMe: false, paused: false, opr: false, removeMe: false},
-{id: 1, name: "Calendar App", url: "http://localhost/05_03_simpleAppCalendar/", duration: 15, priority: 1, background: true, showMe: false, paused: false, opr: false, removeMe: false},
-{id: 3, name: "Bck App", url: "http://localhost/05_03_simpleBackgroundApp/", duration: 15, priority: 1, background: true, showMe: false, paused: false, opr: false, removeMe: false}
-];
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< SCHEDULER OPTIONS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 var openOptions = function optionsPage(){
 	chrome.tabs.create({ url: options, active: true });
 }
 
 var stopScheduler = function stop(){
+	runningFlag = false;
 	firstRunFlag = true;
 	closeSchedFlag = true;
 	printSimpleMsg("SCHEDULER", "Stoping...","");
 	closeScheduler();
 }
 
-function addNewApp(id, name, url, duration, priority, background){
-	var newApp = {};
+var closeScheduler = function close(){
+	timerPauseRequest.removeTimer();
+	timerPause.removeTimer();
+	clearTimeout(giveMeMoreTimeTimer);
 
-	newApp.id = id;
-	newApp.name = name;
-	newApp.url = url;
-	newApp.duration = duration;
-	newApp.priority = priority;
-	newApp.background = background;
-	newApp.showMe = false;
-	newApp.paused = false;
-	newApp.opr = false;
+	Object.keys(tabIdToAppInfo).forEach(function (key) { 
+	    var value = tabIdToAppInfo[key];
+	    var appId = value[0];
+	    var appUrl = value[1];
+	    var tabId = parseInt(key);
 
-	if(background === true){
-		createApp(newApp, sendOnCreateMsg);
-		applications.push(newApp);
-		printRedMsg("APPS", "New application added: ",url);
-	}
-	else{
-		applications.push(newApp);	
-		schedule.splice(schedule.length-1,0,newApp);
-		printRedMsg("APPS", "New application added: ",url);
-	}
+	    var paused = checkIfAppIsPaused(parseInt(appId));
 
-	printArray(schedule, "UPDATED SCHEDULE AFTER ADDING AN APPLICATION");
+	    if(tabId === currentTabId){
+			printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnPause, ""]);
+			chrome.tabs.sendMessage(tabId, {state: messageOnPause, url: appUrl});	    	
+	    }
+	    else{
+
+	    	if(paused === true){
+	    		printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnUnload, ""]);
+				chrome.tabs.sendMessage(tabId, {state: messageOnUnload, url: appUrl});
+	    	}
+	    	else{
+				printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnDestroy, ""]);
+				chrome.tabs.sendMessage(tabId, {state: messageOnDestroy, url: appUrl}); 
+	    	}   	
+	    }
+	});
 }
 
-function removeApp(appId, appUrl){
-	var paused = checkIfAppIsPaused(appId);
-	var next = checkIfAppIsNext(appId);
-	var tabId = getTabIdFromAppId(tabIdToAppInfo, appId);
-	var currentAppTabId = getTabIdFromAppId(tabIdToAppInfo, schedule[schedule.length-1].id);
-	var app = getAppFromTabId(applications, tabId);
-
-	if(currentAppTabId === tabId){
-		console.log("I'M THE RUNNING APPLICATION THEREFORE I'M GOING TO DO THIS: ");
-
-		//remove all timers
-		timerPauseRequest.removeTimer();
-		timerPause.removeTimer();	
-		window.clearTimeout(giveMeMoreTimeTimer);
-
-		turnRemoveMeTrue(appId);
-
-		if(schedule.length === 1){
-			printRedMsg("SCHEDULER", "There are no more applications scheduled !");
-			printCommunicationMsg("Scheduler", ">> Sending", [app.url, messageOnPause, ""]);
-			chrome.tabs.sendMessage(tabId, {state: messageOnPause, url: app.url});	
-		}
-		else{
-			loadApp(schedule[0]);			
-		}
-
-	}
-	else if(paused === true){
-		console.log("I'M PAUSED THEREFORE I'M GOING TO DO THIS: ");
-		turnRemoveMeTrue(appId);
-		printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnUnload, ""]);
-		chrome.tabs.sendMessage(tabId, {state: messageOnUnload, url: appUrl});
-	}
-	else if(paused === false && app.background === true){
-		printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnDestroy, ""]);
-		chrome.tabs.sendMessage(tabId, {state: messageOnDestroy, url: appUrl});		
-	}
-	else{
-		console.log("I'M JUST CREATED OR LOADED THEREFORE I'M GOING TO DO THIS: ");
-		//if app is not in hashtable, send onDestroy
-
-		//else
-		turnRemoveMeTrue(appId);
-	}
-}
-
-function updateApp(appId,updatedValues){
-	for(var i = 0; i < schedule.length; i++){
-		if(schedule[i].id === appId){
-			schedule[i].name = updatedValues[0];
-			schedule[i].url = updatedValues[1];
-			schedule[i].duration = updatedValues[2];
-			schedule[i].priority = updatedValues[3];
-			schedule[i].background = updatedValues[4];
-		}
-	}
-}
-
-var startScheduler = function starting(){
+var startScheduler = function start(){
 	printSimpleMsg("SCHEDULER", "Starting...","");
 
+	runningFlag = true;
 	firstRunFlag = true;
 	closeSchedFlag = false;
+
+	var opt = {
+        type: "basic",
+        title: "Primary Title",
+        message: "Primary message to display",
+        iconUrl: "url_to_small_icon"
+      }
+
+    if(schedule.length === 0){
+		chrome.notifications.create("", 
+			{type: "basic", 
+			title:"Scheduler ERROR",
+			message: "There are no applications scheduled !", 
+			iconUrl: "images/warning.png"}, function(notificationId){
+
+			});
+
+		printRedMsg("STORAGE","There are no applications scheduled !","");
+		return;
+    }
 
 	//window used by scheduler is set to fullscreen
 	//chrome.windows.update(chrome.windows.WINDOW_ID_CURRENT, {state: "fullscreen"});
@@ -170,6 +135,32 @@ var startScheduler = function starting(){
 	createApp(app,sendOnCreateMsg);
 }
 
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< STATES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+//given an application and index, creates an inactive tab with the application
+function createApp(app,callback){
+	chrome.tabs.create({ url: app.url, active: false}, function(tab){
+		//get window ID
+		if(firstCreatedAppFlag === true){
+			windowId = tab.windowId;
+			firstCreatedAppFlag = false;
+		}
+
+		chrome.tabs.executeScript(tab.id, {file: "extensionScript.js", runAt: "document_end"}, function(array){
+			var appInfo = [];
+
+			appInfo.push(app.id);
+			appInfo.push(app.url);
+
+			addAppToHash(tab.id,appInfo);
+
+			//send message onCreate to the created tab
+			callback(tab.id,app.url);
+		});
+	});
+}
+
+//loads an application sending message onLoad
 function loadApp(app){
 	printSimpleMsg("SCHEDULER", "Loading app", app.url);
 
@@ -199,23 +190,6 @@ function loadApp(app){
 		printRedMsg("TABS", "Creating application again",schedule[0].url);
 		undefinedFlag = true;
 		createApp(schedule[0], sendOnCreateMsg);
-	}
-
-   	//handles extra time on onPauseRequest callback
-	giveMeMoreTimeFunc = function moreTimeFunc(extraTime){
-		printSimpleMsg("GIVE ME MORE TIME", "Received message asking for more time: ", extraTime);
-		//pause current timeout
-		printSimpleMsg("GIVE ME MORE TIME", "Pausing current application...","");
-		var paused = timerPause.pause();
-		
-		//if timer is paused			
-		if(paused === 1){
-			//resume job after extraTime is elapsed
-			giveMeMoreTimeTimer = setTimeout(function(){
-				timerPause.resume();
-				printSimpleMsg("GIVE ME MORE TIME", "Resuming current application...","");
-			},extraTime);
-		}
 	}
 }
 
@@ -292,9 +266,24 @@ function resumeApp(app){
 	}
 }
 
-function main(){
-	//get initial schedule with all regular apps
-	schedule = initialSchedule(applications);
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< SCHEDULER >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+function scheduler(){
+
+	//get application's data
+	getDataStorage('appsData').done(function(data){
+
+		if(data.length === 0){
+			printRedMsg("STORAGE","There are no applications scheduled !","");
+			return;
+		}
+		else{
+			applications = data;
+			
+			//get initial schedule with all regular apps
+			schedule = initialSchedule(applications);
+		}
+	});
 
 	//get all tabs opened in window before scheduler starts
 	getTabs();
@@ -416,6 +405,10 @@ function main(){
 
 				//var app = getAppFromTabId(applications,id);
 				createdApps.push(app);
+
+				console.log("1stRunFlag: " + firstRunFlag);
+				console.log("APP.ID: " + app.id);
+				console.log("schedule[0]: " + schedule[0].id);
 
 				if(firstRunFlag === true){
 					if(app.id === schedule[0].id){
@@ -599,4 +592,4 @@ function main(){
 	});
 }
 
-main();
+scheduler();

@@ -1,3 +1,5 @@
+console.log("options.js is running...");
+
 $(document).ready(function() {
 	//global variables
 	var backgroundPage = chrome.extension.getBackgroundPage();
@@ -8,7 +10,21 @@ $(document).ready(function() {
 		var name = document.getElementById('inputAppName').value;
 		var url = document.getElementById('inputAppUrl').value;
 		var duration = document.getElementById('inputAppDuration').value;
+
+	  	if (isNaN(duration)) 
+	  	{
+	    	alert("Duration field must be a number !");
+	    	return;
+	  	}
+
 		var priority = document.getElementById('inputAppPriority').value;
+
+		if (isNaN(priority)) 
+	  	{
+	    	alert("Priority field must be a number !");
+	    	return;
+	  	}
+
 		var backgroundOption = document.getElementById("ddmBackgroundApp");
 		var background = ddmBackgroundApp.options[ddmBackgroundApp.selectedIndex].value;
 
@@ -18,7 +34,6 @@ $(document).ready(function() {
 			backgroundOption = false;
 
 		var biggestId = backgroundPage.getBiggestId();
-		console.log(biggestId);
 		var id = biggestId + 1;
 
 		backgroundPage.addNewApp(id, name, url, parseInt(duration), parseInt(priority), backgroundOption);
@@ -73,7 +88,21 @@ $(document).ready(function() {
 		var name = document.getElementById('inputUpdatedName').value;
 		var url = document.getElementById('inputUpdatedUrl').value;
 		var duration = document.getElementById('inputUpdatedDuration').value;
+
+		if (isNaN(duration) || duration <= 0) 
+	  	{
+	    	alert("Duration field must be a number bigger than zero !");
+	    	return;
+	  	}
+
 		var priority = document.getElementById('inputUpdatedPriority').value;
+
+		if (isNaN(priority) || priority <= 0) 
+	  	{
+	    	alert("Priority field must be a number bigger than zero !");
+	    	return;
+	  	}
+
 		var backgroundOption = document.getElementById("UpdatedBackgroundApp");
 		var background = document.getElementById("ddmBackgroundApp").value; 
 
@@ -94,10 +123,9 @@ $(document).ready(function() {
 			boolBck = false;
 		}
 
-		console.log("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< BOOLEAN: " + boolBck);
 		updatedValues.push(boolBck);
 
-		backgroundPage.updateApp(appId,updatedValues);
+		backgroundPage.updateApp(appId,updatedValues,boolBck);
 
 		updatedValues.unshift(appId);
 
@@ -124,6 +152,7 @@ $(document).ready(function() {
 	createTable(table,applications);
 });
 
+//creates a table with all elements of an array
 function createTable(table,applications){
 	
 	for(var i = 0; i < applications.length; i++){
