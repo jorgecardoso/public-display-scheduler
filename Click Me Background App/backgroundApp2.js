@@ -6,15 +6,6 @@ var jokeDuration = 10000;
 var showedJokes = 0;
 var randomNumber;
 
-function showMeTimeout(){
-
-	setTimeout(function(){
-		showMe();
-	},10000);
-}
-
-//showMeTimeout();
-
 //lifecycle functions
 function onCreate(){
 	console.log(" | LIFECYCLE | onCreate of " + url + " is running...");
@@ -25,6 +16,10 @@ function onLoad(loaded){
 	setTimeout(function(){
 		loaded();
 	},3000);
+
+	setTimeout(function(){
+		//showMe();
+	},10000);
 }
 
 function onResume(){
@@ -33,6 +28,7 @@ function onResume(){
 
 function onPauseRequest(){
 	console.log("LIFECYCLE | onFinishRequest of " + url + " is running...");
+	return 0;
 }
 
 function onPause(){

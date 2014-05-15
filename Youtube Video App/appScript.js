@@ -1,14 +1,4 @@
-sendMessageToExtensionScript = function sendMessageToEs(){
-	var event = createEventWithState(state);
-	printCommunicationMsg("appScript", ">> Sending", [url, event.detail.state, ""]);
-	document.dispatchEvent(event); 
-}
-
-sendMessageToExtensionScriptExtraTime = function sendMessagetoEsTime(){
-	var event = createEventWithStateTime(state,time);
-	printCommunicationMsg("appScript", ">> Sending", [url, event.detail.state, time]);
-	document.dispatchEvent(event); 	
-}
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< LIFECYCLE AUXILIAR FUNCTIONS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 function onCreateAux(created){
 	printSimpleMsg("LIFECYCLE", "onCreateAux", url);
@@ -20,6 +10,7 @@ function onCreateAux(created){
 	}
 	catch(err){
 		printRedMsg("ERROR", err, "onCreate is not defined");
+		console.log(err);
 		created();
 	}
 }
@@ -33,6 +24,7 @@ function onLoadAux(loaded){
 	}
 	catch(err){
 		printRedMsg("ERROR", err, "onLoad is not defined");
+		console.log(err);
 		loaded();
 	}
 }
@@ -44,7 +36,8 @@ function onResumeAux(){
 		onResume();
 	}
 	catch(err){
-		printRedMsg("ERROR", err, "onResume is not defined");	
+		printRedMsg("ERROR", err, "onResume is not defined");
+		console.log(err);	
 	}
 }
 
@@ -54,10 +47,16 @@ function onPauseRequestAux(pauseReady){
 	
 	try{
 		time = onPauseRequest();
+		
+		if(time === undefined){
+			console.warn("onPauseRequest should return a value !");
+		}
+
 		pauseReady();
 	}
 	catch(err){
 		printRedMsg("ERROR", err, "onPauseRequest is not defined");
+		console.log(err);
 		time = 0;
 		pauseReady();
 	}
@@ -73,6 +72,7 @@ function onPauseAux(paused){
 	}
 	catch(err){
 		printRedMsg("ERROR", err, "onPause is not defined");
+		console.log(err);
 		paused();
 	}
 }
@@ -82,11 +82,11 @@ function onUnloadAux(created){
 	state = "createdAfterUnload";
 	
 	try{
-		onUnload();
-		created();
+		onUnload(created);
 	}
 	catch(err){
 		printRedMsg("ERROR", err, "onUnload is not defined");
+		console.log(err);
 		created();		
 	}
 }
@@ -99,6 +99,7 @@ function onDestroyAux(destroyReady){
 		onDestroy(destroyReady);
 	}catch(err){
 		printRedMsg("ERROR", err, "onDestroy is not defined");	
+		console.log(err);
 		destroyReady();
 	}
 }
@@ -113,35 +114,9 @@ function releaseMe(){
 	document.dispatchEvent(releaseMeEvt);
 }
 
-//create custom event with argument "state" and "url"
-function createEventWithState(state){
-  //console.log("appScript is creating an event...");
-  var event = new CustomEvent(
-    "msgFromAppScript", 
-    {
-      detail: {
-        state: state
-      },
-    }
-  ); 
-  return event;
-}
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< COMMUNICATION >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-function createEventWithStateTime(state,extraTime){
-  //console.log("appScript is creating an event...");
-  var event = new CustomEvent(
-    "msgFromAppScript", 
-    {
-      detail: {
-        state: state,
-        time: extraTime
-      },
-    }
-  ); 
-  return event;
-}
-
-//function to execute after appScript receives a message
+//from extensionScript to application
 function messageReceived(event){
 	
 	var state = event.data.state;
@@ -186,18 +161,58 @@ function messageReceived(event){
 	}	
 }
 
+//create custom event with argument "state" and "url"
+function createEventWithState(state){
+  //console.log("appScript is creating an event...");
+  var event = new CustomEvent(
+    "msgFromAppScript", 
+    {
+      detail: {
+        state: state
+      },
+    }
+  ); 
+  return event;
+}
+
+function createEventWithStateTime(state,extraTime){
+  //console.log("appScript is creating an event...");
+  var event = new CustomEvent(
+    "msgFromAppScript", 
+    {
+      detail: {
+        state: state,
+        time: extraTime
+      },
+    }
+  ); 
+  return event;
+}
+
+//sending messages from appScript (application) to extensionScript
+sendMessageToExtensionScript = function sendMessageToEs(){
+	var event = createEventWithState(state);
+	printCommunicationMsg("appScript", ">> Sending", [url, event.detail.state, ""]);
+	document.dispatchEvent(event); 
+}
+
+sendMessageToExtensionScriptExtraTime = function sendMessagetoEsTime(){
+	var event = createEventWithStateTime(state,time);
+	printCommunicationMsg("appScript", ">> Sending", [url, event.detail.state, time]);
+	document.dispatchEvent(event); 	
+}
+
 var state;
 var url;
 var time;
 
-//main()
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function(){
 	console.log( "appScript.js is running..."); 
 
 	//listen messages from extensionScript.js
 	window.addEventListener("message", messageReceived);
-	url = document.URL;
-}); 
+	url = document.URL; 
+ });
 
 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< AUXILIAR FUNCTIONS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 
 

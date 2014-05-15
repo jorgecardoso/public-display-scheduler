@@ -19,6 +19,9 @@ function onCreate(){
 }
 
 function onLoad(loaded){
+    //stop looking for new event temporarly
+    window.clearInterval(eventsInterval);
+
     var nextEventTime = nextEvent[0];
     var nextEventHours = nextEventTime.get('hour');
     var nextEventMinutes = nextEventTime.get('minute');
@@ -27,7 +30,9 @@ function onLoad(loaded){
 
     var nextEventLocation = nextEvent[1];
     var nextEventDescription = nextEvent[2];
+    var nextEventTitle = nextEvent[3];
 
+    document.getElementById("eventTitle").innerHTML= nextEventTitle;
     document.getElementById("eventTime").innerHTML= finalEventTime;
     document.getElementById("eventLocation").innerHTML= nextEventLocation;
     document.getElementById("eventDescription").innerHTML= nextEventDescription;
@@ -37,11 +42,15 @@ function onLoad(loaded){
 
 function onResume(){
     //change div colour
+    setInterval(function(){
+        document.getElementById("eventTime").style.color = "red";
+    }, 2000);
+
     setTimeout(function(){
-        document.getElementById("eventTime").style.backgroundColor = 'green';
-        document.getElementById("eventLocation").style.backgroundColor = 'red';
-        document.getElementById("eventDescription").style.backgroundColor = 'blue';
-    }, 4000);
+        setInterval(function(){
+            document.getElementById("eventTime").style.color = "black";
+        }, 2000);
+    }, 1000);
 }
 
 function onPauseRequest(){
@@ -52,11 +61,17 @@ function onPause(){
 
 }
 
-function onUnload(){
+function onUnload(created){
+    //start checking every "checkInterval" seconds if any event is close to starting
+    eventsInterval = window.setInterval(checkEventTimes, checkEventsInterval);
+
     //clean template data
+    document.getElementById("eventTitle").innerHTML = '';
     document.getElementById("eventTime").innerHTML= '';
     document.getElementById("eventLocation").innerHTML= '';
     document.getElementById("eventDescription").innerHTML= '';
+
+    created();
 }
 
 function onDestroy(destroyReady){
@@ -66,19 +81,22 @@ function onDestroy(destroyReady){
 }
 
 function getEventInformation(){
+    console.log("Checking calendar for new events...");
+
     $.ajax({
         type: "GET",
         url: calendarUrl,
         dataType: "jsonp",
         success: function(xml){
             $(xml).find('entry').each(function(){
+                var entryTitle = $(this).find('title').text();
                 var entryContent = $(this).find('content').text();
                 var entrySummary = $(this).find('summary').text();
                 var splitedContent = entryContent.split("<br />");
                 var splitedSummary = entrySummary.split("&nbsp;");
 
                 var eventInfo = parseResult(splitedSummary, splitedContent);
-                console.log("EVENT INFO: " + eventInfo);
+                console.log("NEW EVENT ADDED: " + eventInfo);
 
                 var eventTime;
 
@@ -98,11 +116,14 @@ function getEventInformation(){
                     eventInfo.shift();
                     eventInfo.unshift(eventTime);
 
+                    //add title of event
+                    eventInfo.push(entryTitle);
+
                     //push event to array of events
                     events.push(eventInfo);
                 }
                 else{
-                    console.log("IGNORING EVENT " + eventInfo);
+                    console.log("IGNORING EVENT: " + eventInfo);
                 }
             });
         },
@@ -126,7 +147,6 @@ function parseResult(resultSummary, resultContent){
     var timePeriodEnd = endTime.slice(-2);
 
     if(startTime.indexOf(":") === -1){
-        console.log("HERE!");
         startTimeFinal = startTime.split(timePeriodStart);
         startTimeFinal = startTimeFinal[0].concat(":00");
         startTimeFinal = startTimeFinal.concat(timePeriodStart);
@@ -148,7 +168,15 @@ function parseResult(resultSummary, resultContent){
  
     var where = resultContent[2].substring(7);
     var whereFinal = where.slice(0,-1);
-    var description = resultContent[4].substring(19);
+
+    try{
+        var description = resultContent[4].substring(19);       
+    }
+    catch(err){
+        console.log(err);
+        var description = resultContent[3].substring(19);
+        var whereFinal = "";
+    }
 
     parsedResult.push(whereFinal);
     parsedResult.push(description);
@@ -157,6 +185,8 @@ function parseResult(resultSummary, resultContent){
 } 
 
 function checkEventTimes(){
+    console.log("Checking if any event is going to start soon...");
+
     for(var i = 0; i < events.length; i++){
         var currentTime  = moment();
         var diff = events[i][0].diff(currentTime, 'minutes');
@@ -165,7 +195,8 @@ function checkEventTimes(){
             nextEvent = events[i];
             //remove event from array of events
             events.splice(i, 1);
-            console.log("PRITING EVENTS!!!!");
+            
+            console.log("PRITING REMAINING EVENTS: ");
             for(var i = 0; i < events.length; i++){
                 console.log(events[i]);
             }

@@ -1,3 +1,5 @@
+var appStopped = 0;
+
 //lifecycle functions
 function onCreate(){
 	var time = timeStamp();
@@ -17,13 +19,18 @@ function onLoad(loaded){
 }
 
 function onResume(){
+	
+	if(appStopped === 1){
+		document.getElementById("onPauseText").value='';
+	}
+	
 	console.log("LIFECYCLE | onResume of " + url + " is running...");
 
 	document.getElementById("onResumeText").value='onResume';
 
 	setTimeout(function(){
-		showMe();
-	},27000);
+		releaseMe();
+	},7000);
 }
 
 function onPauseRequest(){
@@ -31,16 +38,18 @@ function onPauseRequest(){
 
 	document.getElementById("onPauseRequestText").value='onPauseRequest';
 
-	return 0;
+	//return 0;
 }
 
 function onPause(){
 	console.log("LIFECYCLE | onPause of " + url + " is running...");
 	
 	document.getElementById("onPauseText").value='onPause';	
+
+	appStopped = 1;
 }
 
-function onUnload(){
+function onUnload(created){
 	console.log("LIFECYCLE | onUnload of " + url + " is running...");
 	document.getElementById("onUnloadText").value='onUnload';
 	
@@ -51,6 +60,10 @@ function onUnload(){
 		document.getElementById("onPauseRequestText").value='';
 		document.getElementById("onPauseText").value='';
 		document.getElementById("onUnloadText").value='';
+
+		appStopped = 0;
+
+		created();
 	},2000);
 }
 

@@ -135,13 +135,15 @@ function onPause(){
 	appStopped = 1;
 }
 
-function onUnload(){
+function onUnload(created){
 	console.log("LIFECYCLE | onUnload of " + url + " is running...");
 	
 	//clear div with all jokes
 	document.getElementById('randomJoke').innerHTML = "";
 
 	appStopped = 0;
+
+	created();
 }
 
 function onDestroy(destroyReady){

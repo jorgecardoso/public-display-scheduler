@@ -30,7 +30,7 @@ var extraTimeMiliseconds;
 var windowId;
 var openedApps = 0;
 var scheduledApps = 0;
-var numMaxTabs = 5;
+var numMaxTabs = 3;
 var schedulerActiveTab;
 var openedTabs = [];
 
@@ -136,6 +136,7 @@ var startScheduler = function start(){
 }
 
 //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< STATES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
 
 //given an application and index, creates an inactive tab with the application
 function createApp(app,callback){
@@ -385,13 +386,25 @@ function scheduler(){
 				timerPauseRequest.removeTimer();
 				timerPause.removeTimer();
 
-				//and the next application is called
-				loadApp(schedule[0]);
+				if(schedule.length === 1){
+					turnRemoveMeTrue(app.id);
+					printCommunicationMsg("Scheduler", ">> Sending", [app.url, messageOnPause, ""]);
+					chrome.tabs.sendMessage(id, {state: messageOnPause, url: app.url});
+				}
+				else{
+					//and the next application is called
+					loadApp(schedule[0]);
+				}
 			break;
 
 			case "created":
 				openedApps = Object.keys(tabIdToAppInfo).length;
+				console.log("OPENED APPS: " + openedApps);
+
 				scheduledApps = openedApps - backgroundApps.length;
+				console.log("backgroundApps: " + backgroundApps.length);
+
+				console.log("scheduled apps: " + scheduledApps);
 
 
 				if(scheduledApps > numMaxTabs){
@@ -403,7 +416,6 @@ function scheduler(){
 					chrome.tabs.sendMessage(tabId, {state: messageOnDestroy, url: lastApp.url});
 				}
 
-				//var app = getAppFromTabId(applications,id);
 				createdApps.push(app);
 
 				console.log("1stRunFlag: " + firstRunFlag);
@@ -558,8 +570,11 @@ function scheduler(){
 					//console.log("application is paused therefore it shouldn't be unload yet!!!");
 				}
 				else{
-					//change onPauseRequest flag to false
-					schedule[0].opr = false;
+					if(schedule.length > 0){
+						//change onPauseRequest flag to false
+						schedule[0].opr = false;
+					}
+					
 					//send onUnload message
 					printCommunicationMsg("Scheduler", ">> Sending", [url, messageOnUnload, ""]);
 					chrome.tabs.sendMessage(id, {state: messageOnUnload, url: url});
@@ -587,6 +602,9 @@ function scheduler(){
 					timerPause.removeTimer();	
 					window.clearTimeout(giveMeMoreTimeTimer);
 				}
+
+				//save application's data
+				setDataStorage('appsData');
 			break;
 		}
 	});

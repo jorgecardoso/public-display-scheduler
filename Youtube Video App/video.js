@@ -39,14 +39,6 @@ function functionWithData(data) {
 	return deferred.promise();	
 };
 
-function pause() {
-    swfobject.getObjectById('randomVideo').pauseVideo();
-}
-
-function resume(){
-	swfobject.getObjectById('randomVideo').playVideo();
-}
-
 //lifecycle functions
 function onCreate(){
 	console.log("LIFECYCLE | onCreate of " + document.URL + " is running...");
@@ -102,7 +94,7 @@ function onResume(){
 		console.log("VIDEO DURATION: " + window.videoDuration);
 		window.videoDuration = window.videoDuration - window.secondsEllapsed;
 		console.log("VIDEO DURATION AFTER PAUSE: " + window.videoDuration);
-		resume();
+		swfobject.getObjectById('randomVideo').playVideo();
 	}	
 }
 
@@ -156,18 +148,19 @@ function onPause(callback){
 	//startTime = 0;
 
 	//pause video
-	pause();
+	swfobject.getObjectById('randomVideo').pauseVideo();
 	window.pausedTime = new Date().getTime();
 	window.secondsEllapsed = window.pausedTime - window.startTime;
 	console.log("SECONDS ELLAPSED AFTER PAUSE: " + window.secondsEllapsed);
 }
 
-function onUnload(){
+function onUnload(created){
 	console.log("LIFECYCLE | onUnload of " + document.URL + " is running...");
 	appStopped = 0;
 
 	//clear swfobject
 	swfobject.removeSWF("randomVideo");
+	created();
 }
 
 function onDestroy(destroyReady){
