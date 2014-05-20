@@ -43,6 +43,12 @@ var pausedFlag = false;
 var closeSchedFlag = false;
 var undefinedFlag = false;
 
+//timers
+var destroyReadyTimer = 30000;
+var destroyReadyTimersIds = [];
+var unloadTimer = 20000;
+var unloadTimersIds = [];
+
 //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< SCHEDULER OPTIONS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 var openOptions = function optionsPage(){
@@ -77,12 +83,14 @@ var closeScheduler = function close(){
 	    else{
 
 	    	if(paused === true){
-	    		printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnUnload, ""]);
-				chrome.tabs.sendMessage(tabId, {state: messageOnUnload, url: appUrl});
+	    		sendOnUnloadMsg(tabId, appId, appUrl);
+	    		//printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnUnload, ""]);
+				//chrome.tabs.sendMessage(tabId, {state: messageOnUnload, url: appUrl});
 	    	}
 	    	else{
-				printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnDestroy, ""]);
-				chrome.tabs.sendMessage(tabId, {state: messageOnDestroy, url: appUrl}); 
+	    		sendOnDestroyMsg(tabId, appId, appUrl);
+				//printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnDestroy, ""]);
+				//chrome.tabs.sendMessage(tabId, {state: messageOnDestroy, url: appUrl}); 
 	    	}   	
 	    }
 	});
@@ -140,25 +148,25 @@ var startScheduler = function start(){
 
 //given an application and index, creates an inactive tab with the application
 function createApp(app,callback){
-	chrome.tabs.create({ url: app.url, active: false}, function(tab){
-		//get window ID
-		if(firstCreatedAppFlag === true){
-			windowId = tab.windowId;
-			firstCreatedAppFlag = false;
-		}
+    chrome.tabs.create({ url: app.url, active: false}, function(tab){
+        //get window ID
+        if(firstCreatedAppFlag === true){
+            windowId = tab.windowId;
+            firstCreatedAppFlag = false;
+        }
 
-		chrome.tabs.executeScript(tab.id, {file: "extensionScript.js", runAt: "document_end"}, function(array){
-			var appInfo = [];
+        chrome.tabs.executeScript(tab.id, {file: "extensionScript.js", runAt: "document_end"}, function(array){
+            var appInfo = [];
 
-			appInfo.push(app.id);
-			appInfo.push(app.url);
+            appInfo.push(app.id);
+            appInfo.push(app.url);
 
-			addAppToHash(tab.id,appInfo);
+            addAppToHash(tab.id,appInfo);
 
-			//send message onCreate to the created tab
-			callback(tab.id,app.url);
-		});
-	});
+            //send message onCreate to the created tab
+            callback(tab.id,app.url);
+        });
+    });
 }
 
 //loads an application sending message onLoad
@@ -267,6 +275,55 @@ function resumeApp(app){
 	}
 }
 
+function destroyReady(tabId, appId){
+
+	var timerId = getTimerId("destroyReady", tabId);
+
+	clearTimeout(timerId);
+
+	if(closeSchedFlag === true){
+		chrome.tabs.remove(tabId);
+	}
+	else{
+
+		chrome.tabs.remove(tabId);
+
+		removeAppFrom(appId, "schedule");
+		removeAppFrom(appId, "applications");					
+	}
+
+
+	if(schedule.length === 0){
+		//remove all timers	
+		timerPauseRequest.removeTimer();
+		timerPause.removeTimer();	
+		window.clearTimeout(giveMeMoreTimeTimer);
+	}
+
+	//save application's data
+	setDataStorage('appsData');
+}
+
+function createdAfterUnload(tabId, appId, tabUrl){
+	var timerId = getTimerId("createdAfterUnload", tabId);
+
+	clearTimeout(timerId);
+
+	//var app = getAppFromTabId(applications, id);
+	var removeMe = checkRemoveMe(appId);
+
+	if (closeSchedFlag === true || removeMe === true) {
+		sendOnDestroyMsg(tabId, appId, tabUrl);
+		//printCommunicationMsg("Scheduler", ">> Sending", [url, messageOnDestroy, ""]);
+		//chrome.tabs.sendMessage(id, {state: messageOnDestroy, url: url});
+	};
+
+	if(schedule.length === 1){
+		//load the only application scheduled
+		loadApp(schedule[0]);
+	}
+}
+
 //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< SCHEDULER >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 function scheduler(){
@@ -309,6 +366,7 @@ function scheduler(){
 	//listen for messages coming from extensionScript.js
 	chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 		var state = message.state;
+
 		var id = sender.tab.id;
 		var url = sender.tab.url;
 		var time = timeStamp();
@@ -399,28 +457,21 @@ function scheduler(){
 
 			case "created":
 				openedApps = Object.keys(tabIdToAppInfo).length;
-				console.log("OPENED APPS: " + openedApps);
-
 				scheduledApps = openedApps - backgroundApps.length;
-				console.log("backgroundApps: " + backgroundApps.length);
-
-				console.log("scheduled apps: " + scheduledApps);
-
 
 				if(scheduledApps > numMaxTabs){
 					var lastApp = pickLastApp(schedule);
-					console.log("APPS | THIS IS THE LAST APPLICATION TO BE EXECUTED: " + lastApp.url + lastApp.id);
+					printSimpleMsg("APPS", "This is the last application to be executed", lastApp.url);
+
 					var tabId = getTabIdFromAppId(tabIdToAppInfo, lastApp.id);
+					
 					//send message onDestroy to application
-					printCommunicationMsg("Scheduler", ">> Sending", [lastApp.url, messageOnDestroy, ""]);
-					chrome.tabs.sendMessage(tabId, {state: messageOnDestroy, url: lastApp.url});
+					sendOnDestroyMsg(tabId, app.id, url);
+					//printCommunicationMsg("Scheduler", ">> Sending", [lastApp.url, messageOnDestroy, ""]);
+					//chrome.tabs.sendMessage(tabId, {state: messageOnDestroy, url: lastApp.url});
 				}
 
 				createdApps.push(app);
-
-				console.log("1stRunFlag: " + firstRunFlag);
-				console.log("APP.ID: " + app.id);
-				console.log("schedule[0]: " + schedule[0].id);
 
 				if(firstRunFlag === true){
 					if(app.id === schedule[0].id){
@@ -437,19 +488,7 @@ function scheduler(){
 			break;
 
 			case "createdAfterUnload":
-				//var app = getAppFromTabId(applications, id);
-				var removeMe = checkRemoveMe(app.id);
-
-				if (closeSchedFlag === true || removeMe === true) {
-					printCommunicationMsg("Scheduler", ">> Sending", [url, messageOnDestroy, ""]);
-					chrome.tabs.sendMessage(id, {state: messageOnDestroy, url: url});
-				};
-
-				if(schedule.length === 1){
-					//load the only application scheduled
-					loadApp(schedule[0]);
-				}
-
+				createdAfterUnload(id, app.id, url);
 			break;
 
 			case "loaded":
@@ -574,37 +613,18 @@ function scheduler(){
 						//change onPauseRequest flag to false
 						schedule[0].opr = false;
 					}
-					
+
 					//send onUnload message
-					printCommunicationMsg("Scheduler", ">> Sending", [url, messageOnUnload, ""]);
-					chrome.tabs.sendMessage(id, {state: messageOnUnload, url: url});
+					sendOnUnloadMsg(id, app.id, url);
+					//printCommunicationMsg("Scheduler", ">> Sending", [url, messageOnUnload, ""]);
+					//chrome.tabs.sendMessage(id, {state: messageOnUnload, url: url});
 				}
 				
 			break;
 
 			case "destroyReady":
+				destroyReady(id, app.id);
 
-				if(closeSchedFlag === true){
-					chrome.tabs.remove(id);
-				}
-				else{
-
-					chrome.tabs.remove(id);
-
-					removeAppFrom(app.id, "schedule");
-					removeAppFrom(app.id, "applications");					
-				}
-
-
-				if(schedule.length === 0){
-					//remove all timers	
-					timerPauseRequest.removeTimer();
-					timerPause.removeTimer();	
-					window.clearTimeout(giveMeMoreTimeTimer);
-				}
-
-				//save application's data
-				setDataStorage('appsData');
 			break;
 		}
 	});

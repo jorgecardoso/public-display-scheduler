@@ -64,12 +64,14 @@ function removeApp(appId, appUrl){
 		else if(paused === true){
 			console.log("I'M PAUSED THEREFORE I'M GOING TO DO THIS: ");
 			turnRemoveMeTrue(appId);
-			printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnUnload, ""]);
-			chrome.tabs.sendMessage(tabId, {state: messageOnUnload, url: appUrl});
+			sendOnUnloadMsg(tabId, appId, appUrl);
+			//printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnUnload, ""]);
+			//chrome.tabs.sendMessage(tabId, {state: messageOnUnload, url: appUrl});
 		}
 		else if(paused === false && app.background === true){
-			printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnDestroy, ""]);
-			chrome.tabs.sendMessage(tabId, {state: messageOnDestroy, url: appUrl});		
+			sendOnDestroyMsg(tabId, app.id, app.url);
+			//printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnDestroy, ""]);
+			//chrome.tabs.sendMessage(tabId, {state: messageOnDestroy, url: appUrl});		
 		}
 		else{
 			console.log("I'M JUST CREATED OR LOADED THEREFORE I'M GOING TO DO THIS: ");

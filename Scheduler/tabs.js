@@ -50,7 +50,6 @@ function isTabCreated(id){
 			}
 		}
 		def.resolve(value);
-		//return value;
 	});
 
 	return def;

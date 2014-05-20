@@ -67,8 +67,72 @@ function loadBckApp(app){
 }
 
 //sends message onCreate to application in tab "TabId" with URL equal to "appUrl"
-function sendOnCreateMsg(tabId,appUrl){
+function sendOnCreateMsg(tabId, appUrl){
 	chrome.tabs.sendMessage(tabId, {state: messageOnCreate, url: appUrl});			
+}
+
+//send message onDestroy to application in tab "TabId" with URL equal to "appUrl" and ID equal to "appId"
+function sendOnDestroyMsg(tabId, appId, appUrl){
+	var destroyInfo = [];
+
+	printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnDestroy, ""]);
+	chrome.tabs.sendMessage(tabId, {state: messageOnDestroy, url: appUrl});	
+
+	var destroyTimerId = setTimeout( function(){ 
+		printRedMsg("COMMUNICATION", "No message destroyReady received after onDestroy sent by", appUrl);
+		console.warn("No destroyReady(); used in onDestroy of %s", appUrl);
+		
+		state = "destroyReady";
+		destroyReady(tabId, appId);
+
+	}, destroyReadyTimer);
+
+	destroyInfo.push(tabId);
+	destroyInfo.push(destroyTimerId);
+
+	destroyReadyTimersIds.push(destroyInfo);
+}
+
+function sendOnUnloadMsg(tabId, appId, appUrl){
+	var unloadInfo = [];
+
+	printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnUnload, ""]);
+	chrome.tabs.sendMessage(tabId, {state: messageOnUnload, url: appUrl});	
+
+	var unloadTimerId = setTimeout( function(){
+		printRedMsg("COMMUNICATION Scheduler", "No message createdAfterUnload received after onUnload sent by", appUrl);
+		console.warn("No created(); used in onUnload of %s", appUrl);
+		
+		state = "createdAfterUnload";
+		createdAfterUnload(tabId, appId, appUrl);
+
+	}, unloadTimer);
+
+	unloadInfo.push(tabId);
+	unloadInfo.push(unloadTimerId);
+
+	unloadTimersIds.push(unloadInfo);
+}
+
+
+function getTimerId(state, tabId){
+	if(state === "destroyReady"){
+		for(var i = 0; i < destroyReadyTimersIds.length; i++){
+			if(destroyReadyTimersIds[i][0] === tabId){
+				return destroyReadyTimersIds[i][1];
+				destroyReadyTimersIds.splice(i,0);
+			}
+		}
+	}
+	if(state === "createdAfterUnload"){
+		for(var i = 0; i < unloadTimersIds.length; i++){
+			if(unloadTimersIds[i][0] === tabId){
+				return unloadTimersIds[i][1];
+				unloadTimersIds.splice(i,0);
+			}
+		}
+	}
+
 }
 
 //returns true if the priority of "newApp" is bigger than "currentApp", otherwise returns false
