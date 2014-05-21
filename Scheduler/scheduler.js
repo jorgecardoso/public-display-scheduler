@@ -84,13 +84,9 @@ var closeScheduler = function close(){
 
 	    	if(paused === true){
 	    		sendOnUnloadMsg(tabId, appId, appUrl);
-	    		//printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnUnload, ""]);
-				//chrome.tabs.sendMessage(tabId, {state: messageOnUnload, url: appUrl});
 	    	}
 	    	else{
 	    		sendOnDestroyMsg(tabId, appId, appUrl);
-				//printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnDestroy, ""]);
-				//chrome.tabs.sendMessage(tabId, {state: messageOnDestroy, url: appUrl}); 
 	    	}   	
 	    }
 	});
@@ -314,8 +310,6 @@ function createdAfterUnload(tabId, appId, tabUrl){
 
 	if (closeSchedFlag === true || removeMe === true) {
 		sendOnDestroyMsg(tabId, appId, tabUrl);
-		//printCommunicationMsg("Scheduler", ">> Sending", [url, messageOnDestroy, ""]);
-		//chrome.tabs.sendMessage(id, {state: messageOnDestroy, url: url});
 	};
 
 	if(schedule.length === 1){
@@ -467,8 +461,6 @@ function scheduler(){
 					
 					//send message onDestroy to application
 					sendOnDestroyMsg(tabId, app.id, url);
-					//printCommunicationMsg("Scheduler", ">> Sending", [lastApp.url, messageOnDestroy, ""]);
-					//chrome.tabs.sendMessage(tabId, {state: messageOnDestroy, url: lastApp.url});
 				}
 
 				createdApps.push(app);
@@ -494,11 +486,8 @@ function scheduler(){
 			case "loaded":
 				//activate next application
 				activateBackgroundTab(id,url);
-				//var appId = getAppFromTabId(applications,id);
 
-				//console.log("APPS      | Getting start time of application " + appId.url);
 				startTime = getTime();
-
 				addStartTimeToHash(app.id,startTime);
 
 				//if application was interrupted
@@ -523,7 +512,6 @@ function scheduler(){
 				}
 				else{		
 					if(schedule.length > 1){
-						printCommunicationMsg("Scheduler", "<< Receiving", [url, state,""]);
 						printCommunicationMsg("Scheduler", ">> Sending", [currentApp.url, messageOnPause, ""]);
 						chrome.tabs.sendMessage(currentAppTabId, {state: messageOnPause, url: currentApp.url});
 					}
@@ -604,9 +592,7 @@ function scheduler(){
 				if(pausedFlag === true){
 					schedule[schedule.length-1].paused = true;
 					pausedFlag = false;
-
-					//var app = getAppFromTabId(applications,id);
-					//console.log("application is paused therefore it shouldn't be unload yet!!!");
+					//printRedMsg("APPS", "Application is paused therefore it shouldn't be unloaded yet", app.url);
 				}
 				else{
 					if(schedule.length > 0){
@@ -616,8 +602,6 @@ function scheduler(){
 
 					//send onUnload message
 					sendOnUnloadMsg(id, app.id, url);
-					//printCommunicationMsg("Scheduler", ">> Sending", [url, messageOnUnload, ""]);
-					//chrome.tabs.sendMessage(id, {state: messageOnUnload, url: url});
 				}
 				
 			break;

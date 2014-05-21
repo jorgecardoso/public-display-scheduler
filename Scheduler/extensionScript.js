@@ -1,11 +1,17 @@
 console.log("extensionScript.js is running...");
 
-//listen for showMe message from application
+var appCommunication = 'appScript.js';
+
+//injects "appScript.js" in order to communicate with the application
+injectScript(appCommunication);
+
+//listen for "showMe" messages coming from application
 document.addEventListener('showMe', function(source){
 	printRedMsg("SHOW ME", "Receiving message SHOW ME from application", source.target.URL);
 	chrome.extension.sendMessage({state : "showMe"});
 })
 
+//listen for "releaseMe" messages coming from the application
 document.addEventListener('releaseMe', function(source){
 	printRedMsg("RELEASE ME", "Receiving message RELEASE ME from application", source.target.URL);
 	chrome.extension.sendMessage({state : "releaseMe"});
@@ -22,7 +28,6 @@ document.addEventListener('msgFromAppScript', function(data) {
 	else{
 		printCommunicationMsg("extensionScript", "<< Receiving", [url, state, ""]);
 	}
-
 
 	switch(state){
 		case "created":
@@ -70,37 +75,37 @@ chrome.runtime.onMessage.addListener(
 		switch(state){
 			case "onCreate":
 				printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
-       			window.postMessage({state: message.state}, url);
+				window.postMessage({ source: "MyExtension", state: "onCreate" }, url);
 			break;
 
 			case "onLoad":
 				printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
-       			window.postMessage({state: message.state}, url);
+				window.postMessage({ source: "MyExtension", state: "onLoad" }, url);
 			break;
 
 			case "onResume":
 				printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
-       			window.postMessage({state: message.state}, url);
+				window.postMessage({ source: "MyExtension", state: "onResume" }, url);
 			break;
 
 			case "onPauseRequest":
 				printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
-       			window.postMessage({state: message.state}, url);
+				window.postMessage({ source: "MyExtension", state: "onPauseRequest" }, url);
 			break;
 
 			case "onPause":
 				printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
-       			window.postMessage({state: message.state}, url);	
+				window.postMessage({ source: "MyExtension", state: "onPause" }, url);
 			break;
 
 			case "onUnload":
 				printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
-       			window.postMessage({state: message.state}, url);	
+				window.postMessage({ source: "MyExtension", state: "onUnload" }, url);
 			break;
 
 			case "onDestroy":
 				printCommunicationMsg("extensionScript", ">> Sending", [url, state, ""]);
-       			window.postMessage({state: message.state}, url);
+				window.postMessage({ source: "MyExtension", state: "onDestroy" }, url);
 			break;
 		}
 	}
@@ -148,4 +153,17 @@ function printCommunicationMsg(from, message, arg){
 function printRedMsg(type, message, arg){
 	var time = timeStamp();
 	console.log("%c%s | %s | %s %s", "color: red", time, type, message, arg);
+}
+
+//directly injects the file "filename" in the tab's (application) context 
+function injectScript(filename){
+	var s = document.createElement('script');
+
+	// filename must be added to web_accessible_resources in manifest.json
+	s.src = chrome.extension.getURL(filename);
+	s.DOMContentLoaded = function() {
+	    this.parentNode.removeChild(this);
+	};
+
+	(document.head||document.documentElement).appendChild(s);
 }

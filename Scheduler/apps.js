@@ -66,12 +66,13 @@ function loadBckApp(app){
 	});
 }
 
-//sends message onCreate to application in tab "TabId" with URL equal to "appUrl"
+//sends message "onCreate" to application in tab "TabId" with URL equal to "appUrl"
 function sendOnCreateMsg(tabId, appUrl){
+	printCommunicationMsg("Scheduler", ">> Sending", [appUrl, messageOnCreate, ""]);
 	chrome.tabs.sendMessage(tabId, {state: messageOnCreate, url: appUrl});			
 }
 
-//send message onDestroy to application in tab "TabId" with URL equal to "appUrl" and ID equal to "appId"
+//send message "onDestroy" to application in tab "TabId" with URL equal to "appUrl" and ID equal to "appId"
 function sendOnDestroyMsg(tabId, appId, appUrl){
 	var destroyInfo = [];
 
@@ -93,6 +94,7 @@ function sendOnDestroyMsg(tabId, appId, appUrl){
 	destroyReadyTimersIds.push(destroyInfo);
 }
 
+//send "onUnload" message to application in tab "tabId" with URL equal to "appUrl" and ID equal to "appId"
 function sendOnUnloadMsg(tabId, appId, appUrl){
 	var unloadInfo = [];
 
@@ -114,21 +116,28 @@ function sendOnUnloadMsg(tabId, appId, appUrl){
 	unloadTimersIds.push(unloadInfo);
 }
 
-
+//given a state ("destroyReady" or "createdAfterUnload"), returns the ID of the timer initialized on tab "tabId"
 function getTimerId(state, tabId){
+	var timerId;
+
 	if(state === "destroyReady"){
 		for(var i = 0; i < destroyReadyTimersIds.length; i++){
 			if(destroyReadyTimersIds[i][0] === tabId){
-				return destroyReadyTimersIds[i][1];
-				destroyReadyTimersIds.splice(i,0);
+				timerId = destroyReadyTimersIds[i][1];
+				destroyReadyTimersIds.splice(i,1);
+				printArray(destroyReadyTimersIds, "destroyReady timers IDS");
+				return timerId;
 			}
 		}
 	}
+
 	if(state === "createdAfterUnload"){
 		for(var i = 0; i < unloadTimersIds.length; i++){
 			if(unloadTimersIds[i][0] === tabId){
-				return unloadTimersIds[i][1];
-				unloadTimersIds.splice(i,0);
+				timerId = unloadTimersIds[i][1];
+				unloadTimersIds.splice(i,1);
+				printArray(unloadTimersIds, "unload timers IDS");
+				return timerId;
 			}
 		}
 	}

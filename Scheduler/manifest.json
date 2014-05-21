@@ -36,6 +36,10 @@
     "notifications"
 
 	],
+
+  "web_accessible_resources": [
+    "appScript.js"
+  ],
   
   "content_security_policy": "script-src 'self' https://code.jquery.com/jquery.js; object-src 'self'"
 }
