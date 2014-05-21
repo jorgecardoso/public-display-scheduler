@@ -125,7 +125,7 @@ function getTimerId(state, tabId){
 			if(destroyReadyTimersIds[i][0] === tabId){
 				timerId = destroyReadyTimersIds[i][1];
 				destroyReadyTimersIds.splice(i,1);
-				printArray(destroyReadyTimersIds, "destroyReady timers IDS");
+				//printArray(destroyReadyTimersIds, "destroyReady timers IDS");
 				return timerId;
 			}
 		}
@@ -136,7 +136,7 @@ function getTimerId(state, tabId){
 			if(unloadTimersIds[i][0] === tabId){
 				timerId = unloadTimersIds[i][1];
 				unloadTimersIds.splice(i,1);
-				printArray(unloadTimersIds, "unload timers IDS");
+				//printArray(unloadTimersIds, "unload timers IDS");
 				return timerId;
 			}
 		}
