@@ -94,34 +94,59 @@ function removeApp(appId, appUrl){
 	}
 }
 
-function updateApp(appId,updatedValues,boolBck){
+function updateApplicationData(appId, updatedData){
 	//updates applications array
 	for(var i = 0; i < applications.length; i++){
 		if(applications[i].id === appId){
-			applications[i].name = updatedValues[0];
-			applications[i].url = updatedValues[1];
-			applications[i].duration = updatedValues[2];
-			applications[i].priority = updatedValues[3];
-			applications[i].background = updatedValues[4];
+			applications[i].name = updatedData[0];
+			applications[i].url = updatedData[1];
+			applications[i].duration = updatedData[2];
+			applications[i].priority = updatedData[3];
+			applications[i].background = updatedData[4];
+		}
+	}	
+}
+
+function updateApp(appId,updatedValues,boolBck){
+	//get current application data
+	var app = getAppFromAppId(applications, appId);
+	console.log(app);
+	console.log("NOVO VALOR: " + updatedValues[4]);
+
+	//if current value of background atribute is "true" and updated value is "false"
+	//application is added to schedule array
+	if(app.background === true && updatedValues[4] === false){
+		console.log("I WAS TRUE NOW I'M FALSE !");
+		updateApplicationData(app.id, updatedValues);
+		schedule.splice(schedule.length-1,0,app);
+	}
+	else if(app.background === false && updatedValues[4] === true){
+		console.log("I WAS FALSE, NOW I'M TRUE!");
+		updateApplicationData(app.id, updatedValues);
+		removeAppFrom(app.id, "schedule");
+	}
+	//if background application's value remains the same
+	else{
+		console.log("I REMAINN WITH THE SAME VALUE !");
+		updateApplicationData(app.id, updatedValues);
+
+		//updates schedule
+		if(boolBck === false){
+			console.log("I'M NOT A BACKGROUND APPLICATION !");
+
+			for(var i = 0; i < schedule.length; i++){
+				if(schedule[i].id === appId){
+					schedule[i].name = updatedValues[0];
+					schedule[i].url = updatedValues[1];
+					schedule[i].duration = updatedValues[2];
+					schedule[i].priority = updatedValues[3];
+					schedule[i].background = updatedValues[4];
+				}
+			}
 		}
 	}
 
 	printArray(applications, "APPLICATIONS AFTER UPDATE!");
-
-	//updates schedule
-	if(boolBck === false){
-		console.log("I'M NOT A BACKGROUND APPLICATION !");
-
-		for(var i = 0; i < schedule.length; i++){
-			if(schedule[i].id === appId){
-				schedule[i].name = updatedValues[0];
-				schedule[i].url = updatedValues[1];
-				schedule[i].duration = updatedValues[2];
-				schedule[i].priority = updatedValues[3];
-				schedule[i].background = updatedValues[4];
-			}
-		}
-	}
 
 	printArray(schedule, "SCHEDULE AFTER UPDATE!");
 

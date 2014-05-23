@@ -45,32 +45,60 @@ function getTime(){
     return time;
 }
 
-//returns the airtime of the application corresponding to the "id"
-function getAppAirtime(times,id){
-    var airtime;
-
-    for(var i = 0; i < times.length; i++){
-        var time = times[i];
-        if(time[0] === id){
-            var nextAppLoadedTime = times[i+1][1];
-            airtime = nextAppLoadedTime - times[i][1];
-        }
-    }
-
-    return airtime;
+//add the time when an application becomes active
+function addStartTimeToHash(activeTabId, startTime){
+    console.log("Adding startTime of: " + activeTabId);
+    appsStartime[activeTabId] = startTime;
 }
 
-//adds the start time of an application to array "appsAirtime"
-function addStartTimeToHash(appId,startTime){   
-    var airtimeValue = [];  
+//calculates de airtime of the previous application based on both current and previous application's star time
+function addAppAirtime(startTime, activeTabId, previousActiveTabId){
 
-    airtimeValue.push(appId);
-    airtimeValue.push(startTime);
-
-    for(var i = 0; i < appsAirtime.length; i++){
-        if(appsAirtime[i][0] === appId)
-            appsAirtime.splice(i, 1);
+    if(appsStartime[previousActiveTabId] === undefined){
+        printRedMsg("APPS","Cannot calculate airtime of the first application running !");
     }
+    else{
+        var currentAppStartTime = appsStartime[activeTabId];
+        var previousAppStartTime = appsStartime[previousActiveTabId];
+        airtime = currentAppStartTime - previousAppStartTime;
+        
+        addAirtime(previousActiveTabId, airtime);
+    }
+}
 
-    appsAirtime.push(airtimeValue);
+//add application airtime to airtimes hash
+function addAirtime(tabId, appAirtime){
+    var airtime = [];
+
+    //if there is airtimes defined
+    if(applicationsAirtimes[tabId] === undefined){
+        airtime.push(appAirtime);
+        //add new airtime directly
+        applicationsAirtimes[tabId] = airtime;
+    }
+    else{
+        //otherwise, update array of airtimes
+        var actualAirtimes = applicationsAirtimes[tabId];
+        actualAirtimes.push(appAirtime);
+        applicationsAirtimes[tabId] = actualAirtimes;
+    }
+}
+
+//given an "tabId", returns the airtime of the application opened in that tab
+function getAppAirtime(tabId){
+    var airtimes = applicationsAirtimes[tabId];
+
+    //if more than one airtime is defined
+    if(airtimes.length > 1){
+        var sumAirtimes = 0;
+        for(var i = 0; i < airtimes.length; i++){
+            sumAirtimes = sumAirtimes + airtimes[i];
+        }
+
+        //returns the sum of all airtimes
+        return sumAirtimes;
+    }
+    else{
+        return airtimes[0];
+    }
 }

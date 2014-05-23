@@ -71,8 +71,11 @@ $(document).ready(function() {
 		document.getElementById('inputUpdatedUrl').value = appUrl;
 		document.getElementById('inputUpdatedDuration').value = appDuration;
 		document.getElementById('inputUpdatedPriority').value = appPriority;
-		document.getElementById('inputUpdatedName').value = appName;
-		document.getElementById('ddmBackgroundApp').options[ddmBackgroundApp.selectedIndex].value = appBck;
+
+		if(appBck === true)
+			document.getElementById("UpdatedBackgroundApp").selectedIndex = 0;
+		else
+			document.getElementById("UpdatedBackgroundApp").selectedIndex = 1;
 
 		document.getElementById('divAppOptionsAdd').style.display = 'none';
 		document.getElementById('divAppOptionsUpdate').style.display = 'block';
@@ -103,8 +106,7 @@ $(document).ready(function() {
 	    	return;
 	  	}
 
-		var backgroundOption = document.getElementById("UpdatedBackgroundApp");
-		var background = document.getElementById("ddmBackgroundApp").value; 
+		var background = document.getElementById('UpdatedBackgroundApp').options[UpdatedBackgroundApp.selectedIndex].value;
 
 		updatedValues.push(name);
 		updatedValues.push(url);

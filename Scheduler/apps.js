@@ -103,7 +103,7 @@ function sendOnUnloadMsg(tabId, appId, appUrl){
 
 	var unloadTimerId = setTimeout( function(){
 		printRedMsg("COMMUNICATION Scheduler", "No message createdAfterUnload received after onUnload sent by", appUrl);
-		console.warn("No created(); used in onUnload of %s", appUrl);
+		console.warn("No unloadReady(); used in onUnload of %s", appUrl);
 		
 		state = "createdAfterUnload";
 		createdAfterUnload(tabId, appId, appUrl);

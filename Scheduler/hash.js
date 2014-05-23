@@ -26,3 +26,11 @@ function getTabIdFromAppId(hash, id) {
 		}
 	}
 }
+
+//returns the application with ID equal to "appId"
+function getAppFromAppId(apps, appId){
+	for(var i = 0; i < apps.length; i++){
+		if(apps[i].id === appId)
+			return apps[i];
+	}
+}
