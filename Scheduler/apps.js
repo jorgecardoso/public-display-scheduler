@@ -259,3 +259,14 @@ function getBiggestId(){
 
 	return id;
 }
+
+//returns the number of regular applications scheduled
+function countingRegularApps(applications){
+	var number = 0;
+	for(var i = 0; i < applications.length; i++){
+		if(applications[i].background === false)
+			number = number + 1;
+	}
+
+	return number;
+}

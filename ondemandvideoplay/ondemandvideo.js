@@ -3,6 +3,7 @@ var channelKey = "ondemandvideoplayer";
 var clientid = Math.floor(Math.random()*10000);	
 var appStopped = false;
 var appPlayer;
+var appDefaultTime = 50;
 
 function onCreate(){
 	
@@ -57,9 +58,9 @@ function onPause(){
 }
 
 function onUnload(unloadReady){
+
 	appStopped === false;
-	unloadReady();
-   
+	unloadReady(); 
 }
 
 function onDestroy(destroyReady){
@@ -70,8 +71,12 @@ function onDestroy(destroyReady){
 
 
 function onytplayerStateChange(newState) {
+	var videoDuration = appPlayer.getDuration();
+	
    if(newState === 0){
-   	releaseMe();
+   		if(appDefaultTime > videoDuration){
+   			releaseMe();
+   		}
    }
 }
 

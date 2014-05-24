@@ -38,6 +38,7 @@ var numMaxTabs = 3;
 var schedulerActiveTab;
 var openedTabs = [];
 var appAirtime = [];
+var previousReleaseMeId;
 
 //flags
 var runningFlag = false;
@@ -212,7 +213,15 @@ function resumeApp(app){
 	var tabId =  getTabIdFromAppId(tabIdToAppInfo, app.id);
 	activateBackgroundTab(tabId,app.url);
 
-	if(schedule.length > 2){
+	var regularApps = countingRegularApps(applications);
+
+	///////////////////////////////////////////////////////////////////
+	//                                                               //
+	//   When there is MORE than one regular application scheduled   //
+	//                                                               //
+	///////////////////////////////////////////////////////////////////
+
+	if(regularApps > 1){
 		var currentApp = schedule[schedule.length-1];
 		var currentTabId = getTabIdFromAppId(tabIdToAppInfo,currentApp.id);
 
@@ -299,6 +308,13 @@ function destroyReady(tabId, appId){
 
 	clearTimeout(timerId);
 
+	//clear airtime values
+	var clearAirtimes =	applicationsAirtimes[tabId];
+	if(clearAirtimes != undefined){
+		clearAirtimes.length = 0;
+		applicationsAirtimes[tabId] = clearAirtimes;
+	}
+
 	if(closeSchedFlag === true){
 		chrome.tabs.remove(tabId);
 	}
@@ -331,6 +347,11 @@ function createdAfterUnload(tabId, appId, tabUrl){
 	if(clearAirtimes != undefined){
 		clearAirtimes.length = 0;
 		applicationsAirtimes[tabId] = clearAirtimes;
+	}
+
+	//clear previousReleaseMeId
+	if(previousReleaseMeId === appId){
+		previousReleaseMeId = undefined;
 	}
 
 	//var app = getAppFromTabId(applications, id);
@@ -412,80 +433,89 @@ function scheduler(){
 
 		switch(state){
 			case "showMe":
-			printRedMsg("SHOW ME", "Show me called by application ", url);
+				printRedMsg("SHOW ME", "Show me called by application ", url);
 
-			//get showMe application
-			//showMeApp = getAppFromTabId(applications,id);
-			showMeApp = app;
-			showMeAppCopy = jQuery.extend({}, showMeApp);
-			showMeAppCopy.showMe = true;
-			nextApp = schedule[0];
+				//get showMe application
+				//showMeApp = getAppFromTabId(applications,id);
+				showMeApp = app;
+				showMeAppCopy = jQuery.extend({}, showMeApp);
+				showMeAppCopy.showMe = true;
+				nextApp = schedule[0];
 
-			//get current application
-			currentApp = schedule[schedule.length-1];
+				//get current application
+				currentApp = schedule[schedule.length-1];
 
-			//if showMe application is already running or is the next application in the list, ignore...
-			if(currentApp.id === showMeApp.id || nextApp.id === showMeApp.id){
-				printRedMsg("SCHEDULER", "Ignoring SHOW ME - application is already displaying or is the next in line", currentApp.url);
-			}
-			else if(checkIfAppIsPaused(showMeApp.id)){
-				printRedMsg("SCHEDULER", "Ignoring SHOW ME - application is paused", currentApp.url);
-			}
-			//othwerwise, add showMe app to schedule
-			else{
-				//compares priorities of both apps
-				var compare = isPriorityBigger(currentApp,showMeAppCopy);
-				//console.log("SCHEDULER | Comparing apps: " + compare);
-
-				//if both apps have the same priority
-				if(compare === false){
-					//current app can finish to run normally and "showMe" app is launched next
-					addShowMeApp(showMeAppCopy);
-
-					printArray(schedule, "UPDATED SCHEDULE AFTER ADDING SHOW ME APP!");
+				//if showMe application is already running or is the next application in the list, ignore...
+				if(currentApp.id === showMeApp.id || nextApp.id === showMeApp.id){
+					printRedMsg("SCHEDULER", "Ignoring SHOW ME - application is already displaying or is the next in line", currentApp.url);
 				}
+				else if(checkIfAppIsPaused(showMeApp.id)){
+					printRedMsg("SCHEDULER", "Ignoring SHOW ME - application is paused", currentApp.url);
+				}
+				//othwerwise, add showMe app to schedule
 				else{
-					pausedFlag = true;
+					//compares priorities of both apps
+					var compare = isPriorityBigger(currentApp,showMeAppCopy);
+					//console.log("SCHEDULER | Comparing apps: " + compare);
 
-					currentApp.paused = true;
-					updateSchedulePaused(schedule);
-					schedule.push(showMeAppCopy);
+					//if both apps have the same priority
+					if(compare === false){
+						//current app can finish to run normally and "showMe" app is launched next
+						addShowMeApp(showMeAppCopy);
 
-					printArray(schedule, "UPDATED SCHEDULE AFTER AN APPLICATION IS INTERRUPED");
+						printArray(schedule, "UPDATED SCHEDULE AFTER ADDING SHOW ME APP!");
+					}
+					else{
+						
+						timerPauseRequest.removeTimer();
+						timerPause.removeTimer();	
+						window.clearTimeout(giveMeMoreTimeTimer);
 
-					timerPauseRequest.removeTimer();
-					timerPause.removeTimer();	
-					window.clearTimeout(giveMeMoreTimeTimer);
+						pausedFlag = true;
 
-					loadApp(showMeAppCopy);	
+						currentApp.paused = true;
+
+						updateSchedulePaused(schedule);
+						schedule.push(showMeAppCopy);
+
+						printArray(schedule, "UPDATED SCHEDULE AFTER AN APPLICATION IS INTERRUPED");
+
+						loadApp(showMeAppCopy);	
+					}
 				}
-			}
 
 			break;
 
 			//if an applications calls "releaseMe"
 			case "releaseMe":
-				printRedMsg("RELEASE ME", "Release me called by application ", url);
-				//both timers linked to the current application are removed
-				timerPauseRequest.removeTimer();
-				timerPause.removeTimer();
-				clearTimeout(giveMeMoreTimeTimer);
 
-				if(schedule.length === 1){
-					turnRemoveMeTrue(app.id);
-					printCommunicationMsg("Scheduler", ">> Sending", [app.url, messageOnPause, ""]);
-					chrome.tabs.sendMessage(id, {state: messageOnPause, url: app.url});
+				if(previousReleaseMeId === app.id){
+					printRedMsg("RELEASE ME","Ignore releaseMe: called twice by application", url);
 				}
 				else{
-					if(schedule[0].paused === true){
-						console.log("APPLICATION IS PAUSED !!!!!!!!!!!!!!!!!!!!!!!!!!!");
-						resumeApp(schedule[0]);
+					previousReleaseMeId = app.id;
+					printRedMsg("RELEASE ME", "Release me called by application ", url);
+					//both timers linked to the current application are removed
+					timerPauseRequest.removeTimer();
+					timerPause.removeTimer();
+					clearTimeout(giveMeMoreTimeTimer);
+
+					if(schedule.length === 1){
+						turnRemoveMeTrue(app.id);
+						printCommunicationMsg("Scheduler", ">> Sending", [app.url, messageOnPause, ""]);
+						chrome.tabs.sendMessage(id, {state: messageOnPause, url: app.url});
 					}
 					else{
-						//and the next application is called
-						loadApp(schedule[0]);
-					}
+						if(schedule[0].paused === true){
+							resumeApp(schedule[0]);
+						}
+						else{
+							//and the next application is called
+							loadApp(schedule[0]);
+						}
+					}				
 				}
+
 			break;
 
 			case "created":
@@ -626,7 +656,6 @@ function scheduler(){
 
 			case "paused":	
 				if(pausedFlag === true){
-					schedule[schedule.length-1].paused = true;
 					pausedFlag = false;
 					//printRedMsg("APPS", "Application is paused therefore it shouldn't be unloaded yet", app.url);
 				}
