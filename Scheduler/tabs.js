@@ -32,9 +32,11 @@ function openAppInBackgroundTab(tabUrl){
 //push tab with ID "tabID" to the front and sends message onResume
 function activateBackgroundTab(tabId,url){
 	chrome.tabs.update(tabId, {active: true}, function(tab){
+		
+		var nextApp = getAppFromTabId(applications,tabId);
 
 		// << << SPECIAL CASE: schedule length = 1 >> >>
-		if(schedule.length === 1){
+		if(schedule.length === 1 || nextApp.background === true){
 			//if there is only one application scheduled, startTime will not be updated because the active tab doesn't change
 			var startTime = getTime();
 			//get startTime when application's tab becomes the active tab

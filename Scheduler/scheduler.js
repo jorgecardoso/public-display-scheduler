@@ -71,7 +71,7 @@ var stopScheduler = function stop(){
 var closeScheduler = function close(){
 	timerPauseRequest.removeTimer();
 	timerPause.removeTimer();
-	clearTimeout(giveMeMoreTimeTimer);
+	window.clearTimeout(giveMeMoreTimeTimer);
 
 	Object.keys(tabIdToAppInfo).forEach(function (key) { 
 	    var value = tabIdToAppInfo[key];
@@ -315,7 +315,7 @@ function destroyReady(tabId, appId){
 		//remove all timers	
 		timerPauseRequest.removeTimer();
 		timerPause.removeTimer();	
-		clearTimeout(giveMeMoreTimeTimer);
+		window.clearTimeout(giveMeMoreTimeTimer);
 	}
 
 	//save application's data
@@ -455,7 +455,7 @@ function scheduler(){
 
 					timerPauseRequest.removeTimer();
 					timerPause.removeTimer();	
-					clearTimeout(giveMeMoreTimeTimer);
+					window.clearTimeout(giveMeMoreTimeTimer);
 
 					loadApp(showMeAppCopy);	
 				}
@@ -469,6 +469,7 @@ function scheduler(){
 				//both timers linked to the current application are removed
 				timerPauseRequest.removeTimer();
 				timerPause.removeTimer();
+				clearTimeout(giveMeMoreTimeTimer);
 
 				if(schedule.length === 1){
 					turnRemoveMeTrue(app.id);
@@ -476,8 +477,14 @@ function scheduler(){
 					chrome.tabs.sendMessage(id, {state: messageOnPause, url: app.url});
 				}
 				else{
-					//and the next application is called
-					loadApp(schedule[0]);
+					if(schedule[0].paused === true){
+						console.log("APPLICATION IS PAUSED !!!!!!!!!!!!!!!!!!!!!!!!!!!");
+						resumeApp(schedule[0]);
+					}
+					else{
+						//and the next application is called
+						loadApp(schedule[0]);
+					}
 				}
 			break;
 

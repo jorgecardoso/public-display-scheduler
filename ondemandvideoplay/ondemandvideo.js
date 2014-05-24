@@ -3,7 +3,6 @@ var channelKey = "ondemandvideoplayer";
 var clientid = Math.floor(Math.random()*10000);	
 var appStopped = false;
 var appPlayer;
-var onPauseRequestHappened = false;
 
 function onCreate(){
 	
@@ -22,16 +21,16 @@ function onResume(){
  		loadVideo(videotoplay);
 	}
 	else{
-		if(onPauseRequestHappened === true){
-
-		}
 		//resume video
 		swfobject.getObjectById("ytPlayer").playVideo();		
 	}
+
+	appPlayer = swfobject.getObjectById("ytPlayer");
+	
+	appPlayer.addEventListener("onStateChange", "onytplayerStateChange");
 }
 
 function onPauseRequest(){
-	onPauseRequestHappened = true;
 
 	appPlayer = swfobject.getObjectById("ytPlayer");
 
@@ -49,8 +48,12 @@ function onPauseRequest(){
 
 function onPause(){
 	appStopped = true;
+
 	//pause video
 	swfobject.getObjectById("ytPlayer").pauseVideo();
+
+	//remove state change listener
+	appPlayer.removeEventListener("onStateChange","onytplayerStateChange");
 }
 
 function onUnload(unloadReady){
@@ -66,8 +69,11 @@ function onDestroy(destroyReady){
 
 
 
-
-
+function onytplayerStateChange(newState) {
+   if(newState === 0){
+   	releaseMe();
+   }
+}
 
 function mySendMessage(message) {
    sendMessage(channelKey, document.getElementById('clientidTextbox').value + " " + message);

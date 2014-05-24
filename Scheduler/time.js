@@ -47,7 +47,6 @@ function getTime(){
 
 //add the time when an application becomes active
 function addStartTimeToHash(activeTabId, startTime){
-    console.log("Adding startTime of: " + activeTabId);
     appsStartime[activeTabId] = startTime;
 }
 
@@ -55,7 +54,7 @@ function addStartTimeToHash(activeTabId, startTime){
 function addAppAirtime(startTime, activeTabId, previousActiveTabId){
 
     if(appsStartime[previousActiveTabId] === undefined){
-        printRedMsg("APPS","Cannot calculate airtime of the first application running !");
+        printRedMsg("APPS","Cannot calculate airtime of the first application running !","");
     }
     else{
         var currentAppStartTime = appsStartime[activeTabId];
