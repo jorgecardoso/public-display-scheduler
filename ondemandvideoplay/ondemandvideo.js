@@ -1,14 +1,15 @@
 var videotoplay;
 var channelKey = "ondemandvideoplayer";
 var clientid = Math.floor(Math.random()*10000);	
-
+var appStopped = false;
+var appPlayer;
+var onPauseRequestHappened = false;
 
 function onCreate(){
 	
 	console.log("Client ID: " + clientid);
 	
 	myOpenChannel();
-
 }
 
 function onLoad(loaded){
@@ -17,18 +18,44 @@ function onLoad(loaded){
 }
 
 function onResume(){
- 	loadVideo(videotoplay);
+	if(appStopped === false){
+ 		loadVideo(videotoplay);
+	}
+	else{
+		if(onPauseRequestHappened === true){
+
+		}
+		//resume video
+		swfobject.getObjectById("ytPlayer").playVideo();		
+	}
 }
 
 function onPauseRequest(){
-    return 0;
+	onPauseRequestHappened = true;
+
+	appPlayer = swfobject.getObjectById("ytPlayer");
+
+	var videoDuration = appPlayer.getDuration();
+	console.log("VIDEO DURATION: " + videoDuration);
+
+	var ellapsedTime = appPlayer.getCurrentTime();
+	console.log("ellapsedTime: " + ellapsedTime);
+
+	var extraTime = videoDuration - ellapsedTime;
+	console.log(extraTime);
+
+    return extraTime;
 }
 
 function onPause(){
-
+	appStopped = true;
+	//pause video
+	swfobject.getObjectById("ytPlayer").pauseVideo();
 }
 
 function onUnload(unloadReady){
+	appStopped === false;
+	unloadReady();
    
 }
 

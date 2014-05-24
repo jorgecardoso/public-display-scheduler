@@ -1,112 +1,184 @@
 <html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport"
-  content="width=device-width, initial-scale=1.0, user-scalable=no">
-<script type="text/javascript" src="http://web-channel.appspot.com/_ah/channel/jsapi"></script>
-<script type="text/javascript" src="http://web-channel.appspot.com/channel.js"></script>
-<script type="text/javascript" src="qrcode.js"></script>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport"
+		  content="width=device-width, initial-scale=1.0, user-scalable=no">
+		<script src="https://code.jquery.com/jquery.js"></script>
+		<script type="text/javascript" src="http://web-channel.appspot.com/_ah/channel/jsapi"></script>
+		<script type="text/javascript" src="http://web-channel.appspot.com/channel.js"></script>
+		<script type="text/javascript" src="qrcode.js"></script>
 
 
-<script  type="text/javascript">
+		<script  type="text/javascript">
+		var videoTitle;
+		var videoDescription;
 
-var draw_qrcode = function(text, typeNumber, errorCorrectLevel) {
-	document.write(create_qrcode(text, typeNumber, errorCorrectLevel) );
-};
+		var draw_qrcode = function(text, typeNumber, errorCorrectLevel) {
+			document.write(create_qrcode(text, typeNumber, errorCorrectLevel) );
+		};
 
-var create_qrcode = function(text, typeNumber, errorCorrectLevel, table) {
+		var create_qrcode = function(text, typeNumber, errorCorrectLevel, table) {
 
-	var qr = qrcode(typeNumber || 4, errorCorrectLevel || 'M');
-	qr.addData(text);
-	qr.make();
+			var qr = qrcode(typeNumber || 4, errorCorrectLevel || 'M');
+			qr.addData(text);
+			qr.make();
 
-//	return qr.createTableTag();
-	return qr.createImgTag();
-};
+		//	return qr.createTableTag();
+			return qr.createImgTag();
+		};
 
-var update_qrcode = function(videoid) {
-//	var text = document.forms[0].elements['msg'].value.
-//		replace(/^[\s\u3000]+|[\s\u3000]+$/g, '');
-	document.getElementById('qrimg').innerHTML = create_qrcode("http://jorgecardoso.eu/temp/ondemandvideoplay/index-play.html?videoid="+videoid, 5);
-	document.getElementById('qrimg').href="http://jorgecardoso.eu/temp/ondemandvideoplay/index-play.html?videoid="+videoid;
-	document.getElementById('tableqrcode').style.visibility="visible";
-};
-
-
-	function submit() {
-		
-		
-		var data = {};
-  		data.url = document.getElementById("videourltext").value;
-  		data.videoid = getParameter(data.url, 'v');
-		//mySendMessage(JSON.stringify(data));
-		//console.log("submit " + document.getElementById("videourltext").value);
-		
-		update_qrcode(data.videoid);
-		
-	}
+		var update_qrcode = function(videoid) {
+		//	var text = document.forms[0].elements['msg'].value.
+		//		replace(/^[\s\u3000]+|[\s\u3000]+$/g, '');
+			document.getElementById('qrimg').innerHTML = create_qrcode("http://jorgecardoso.eu/temp/ondemandvideoplay/index-play.html?videoid="+videoid, 5);
+			document.getElementById('qrimg').href="http://jorgecardoso.eu/temp/ondemandvideoplay/index-play.html?videoid="+videoid;
+			document.getElementById('tableqrcode').style.visibility="visible";
+		};
 
 
- function getParameter(url, name) {
-    var urlparts = url.split('?');
-    if (urlparts.length > 1) {
-        var parameters = urlparts[1].split('&');
-        for (var i = 0; i < parameters.length; i++) {
-            var paramparts = parameters[i].split('=');
-            if (paramparts.length > 1 && unescape(paramparts[0]) == name) {
-                return unescape(paramparts[1]);
-            }
-        }
-    }
-    return null;
-}
+			function submit() {
 
- 
-</script>
+				//get inserted url
+				var url = document.getElementById("videourltext").value;
+				console.log(url);
 
-<style>
-body,html{
-	height: 100%;
-}
+				//get video ID
+				var splittedUrl = url.split("v=");
+				console.log(splittedUrl);
+				var id = splittedUrl[1];
+				
+				//hide div content
+				document.getElementById("content").style.display = 'none';
 
-#videourltext {
-	font-size:large;
-	width: 100%;
-	height:50px;
-}
+				//display info text
+				document.getElementById("info").style.visibility = 'visible';
 
-#submitbutton {
-	
-	width:100px;
-	height:100px;
-}
+				//get video information and update header of webpage
+				getVideoInformation(id);
 
-#qrimg img {
-	width: 300px;
-	height: 300px;
-}
+				var data = {};
+		  		data.url = document.getElementById("videourltext").value;
+		  		data.videoid = getParameter(data.url, 'v');
+				//mySendMessage(JSON.stringify(data));
+				//console.log("submit " + document.getElementById("videourltext").value);
+				
+				update_qrcode(data.videoid);
+				
+			}
 
-#tableqrcode {
-	visibility:hidden;
-}
-</style>
-</head>
 
-<body >
-Paste the URL of the Youtube video to play on the public display:
-<input id="videourltext" type="text" name="videourl"><br>
-<input id="submitbutton" type="button" value="Create QR Code" onclick="submit()"><br>
+		 function getParameter(url, name) {
+		    var urlparts = url.split('?');
+		    if (urlparts.length > 1) {
+		        var parameters = urlparts[1].split('&');
+		        for (var i = 0; i < parameters.length; i++) {
+		            var paramparts = parameters[i].split('=');
+		            if (paramparts.length > 1 && unescape(paramparts[0]) == name) {
+		                return unescape(paramparts[1]);
+		            }
+		        }
+		    }
+		    return null;
+		}
 
-<table id="tableqrcode">
-<tr>
-<td>
-<a href="" target="_blank" id="qrimg"></a>
-</td>
-<td>
-Click on the QR Code to launch the video on the public display. 
-You can copy/paste the QR Code image and use anywhere to allow others to launch your video on the public display.
-</td>
-</tr>
-</table>
+		function getVideoInformation(id){
+				var url = "https://gdata.youtube.com/feeds/api/videos/" + id + "?v=2&alt=json";
+				$.getJSON(url, functionWithData);	
+		}
+
+		//process received answered from the server
+		function functionWithData(data) {
+			//get video title
+			videoTitle = data.entry.title.$t;
+
+			//get video description
+			videoDescription = data.entry.media$group.media$description.$t;
+
+			//update header of webpage
+			document.getElementById("title").innerHTML = videoTitle;
+			document.getElementById("title").style.fontSize = "70px";
+			document.getElementById("description").innerHTML = videoDescription;
+		};
+		 
+		</script>
+
+		<style>
+		body,html{
+			height: 90%;
+		}
+		#title{
+			font-size: 60px;
+			text-align: center;
+			padding: 5px;
+		}
+
+		#content{
+			text-align: center;
+		}
+
+		#videourltext {
+			text-align: center;
+			font-size:large;
+			width: 80%;
+			height:50px;
+		}
+
+		#submitbutton {
+			font-size: 18px;
+			margin: 0 auto;
+			width:150px;
+			height:100px;
+			margin-top: 30px;
+		}
+
+		#qrimg img {
+			width: 300px;
+			height: 300px;
+		}
+
+		#tableqrcode {
+			width: 100%;
+			text-align: center;
+			visibility:hidden;
+		}
+
+		#info{
+			visibility: hidden;
+			width: 80%;
+			text-align: center;
+			font-size: 50px;
+			margin: 0 auto;
+		}
+
+		#description{
+			width: 80%;
+			font-size: 30px;
+			margin: 0 auto;
+			text-align: justify;
+			margin-top: 30px;
+		}
+
+		</style>
+	</head>
+<body>
+	<div id="title">
+		<h1>Video On Demand</h1>
+	</div>
+	<div id="description"> </div>
+
+	<div id="content">
+		<h2>Paste the URL of the Youtube video to play on the public display:<h2>
+		<input id="videourltext" type="text" name="videourl"><br>
+		<input id="submitbutton" type="button" value="Create QR Code" onclick="submit()"><br>
+	</div>
+
+	<table id="tableqrcode">
+		<tr>
+			<td>
+			<a href="" target="_blank" id="qrimg"></a>
+			</td>
+		</tr>
+	</table>
+	<div id="info"> Read the QR Code with your mobile to display the video on the public display ! </div>
 </body>
 </html>
