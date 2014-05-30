@@ -142,6 +142,17 @@ function getTimerId(state, tabId){
 		}
 	}
 
+	if(state === "loaded"){
+		for(var i = 0; i < loadTimersIds.length; i++){
+			if(loadTimersIds[i][0] === tabId){
+				timerId = loadTimersIds[i][1];
+				loadTimersIds.splice(i,1);
+				//printArray(loadTimersIds, "load timers IDS");
+				return timerId;
+			}
+		}
+	}
+
 }
 
 //returns true if the priority of "newApp" is bigger than "currentApp", otherwise returns false
@@ -269,4 +280,49 @@ function countingRegularApps(applications){
 	}
 
 	return number;
+}
+
+function isAppWaitingLoaded(appId){
+	var waitingLoaded = false;
+
+	for(var i = 0; i < waitingForLoaded.length; i++){
+		if(waitingForLoaded[i] === appId)
+			waitingLoaded = true;
+	}
+
+	return waitingLoaded;
+}
+
+function changeLoadedToTrue(appId){
+	for(var i = 0; i < applications.length; i++){
+		if(applications[i].id === appId)
+			applications[i].loaded = true;
+	}
+
+	printArray(schedule,"PRINting schedule after delayed loaded received!");
+}
+
+function restartOpr(applications){
+	for(var i = 0; i < applications.length; i++)
+		applications[i].opr = 0;
+}
+
+function isAppWaitingLoaded(appId){
+	for(var i = 0; i < waitingForLoaded.length; i++){
+		if(waitingForLoaded[i] === appId)
+			return true;
+	}
+
+	return false;
+}
+
+function removeWaitingLoadedApp(appId){
+	console.log("Size before: " + waitingForLoaded.length);
+
+	for(var i = 0; i < waitingForLoaded.length; i++){
+		if(waitingForLoaded[i] === appId)
+			waitingForLoaded.splice(i,1);
+	}
+
+	console.log("size after: " + waitingForLoaded.length);
 }

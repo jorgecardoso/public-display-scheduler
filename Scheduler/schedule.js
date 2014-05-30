@@ -44,3 +44,36 @@ function initialSchedule(apps){
 
 	return schedule;
 }
+
+function updateDelayed(schedule, appId){
+	var delayedApp;
+
+	if(schedule.length > 2){
+		for(var i = 0; i < schedule.length; i++){
+			if(schedule[i].id === appId){
+				//saves application
+				delayedApp = schedule[i];
+				console.log(delayedApp.url);
+
+				//removes it from current position of schedule
+				schedule.splice(i,1);
+				console.log("size: " + schedule.length);
+			}
+		}
+
+		schedule.unshift(delayedApp);
+	}
+
+	printArray(schedule,"ARRAY AFTER PLACING DELAYED APPLICATION !! ! ! ! ! ! !! !");
+}
+
+function blockedScheduler(){
+	console.log("waitingForLoaded size: " + waitingForLoaded.length);
+	var regularApps;
+	regularApps = countingRegularApps(applications);
+
+	if(waitingForLoaded.length > regularApps)
+		return true;
+	else
+		return false;
+}

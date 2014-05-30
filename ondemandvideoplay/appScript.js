@@ -33,7 +33,7 @@ function onLoadAux(loaded){
 	}
 	catch(err){
 		printRedMsg("ERROR", err, "onLoad is not defined");
-		loaded();
+		//loaded();
 	}
 }
 

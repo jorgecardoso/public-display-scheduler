@@ -1,53 +1,123 @@
-//global variables
-var counter = 0;
-var jokes = [];
-var i = 0; 
-var jokeDuration = 10000;
-var showedJokes = 0;
 var randomNumber;
-var title;
-var description;
-var videoID = [];
-var ids = ["Jwj5KhF1Hhk","9ZVwJfkM0Eg","brLuH74fjlw","wZqE2wm2skU","wCkerYMffMo"];
+var videosUrl = [];
 var id;
-window.videoDuration = 0;
-window.secondsEllapsed = 0;
-var appStopped = 0;
-var secondsTimer = null;
-window.startTime;
-window.pausedTime;
-window.pauseRequestTime;
+var appStopped = false;
+var player;
+var playerReady = false;
+var onPauseRequestFlag = false;
 
-//get a random number between min and max
+//load flash player to display videos
+function loadPlayer() {
+	console.log("loadPlayer");
+
+	// The video to load
+	var videoID = "8Vc7aTZkIww"; //"ylLzyHk54Z0"
+	// Lets Flash from another domain call JavaScript
+	var params = { allowScriptAccess: "always" };
+	// The element id of the Flash embed
+	var atts = { id: "ytPlayer" };
+	// All of the magic handled by SWFObject (http://code.google.com/p/swfobject/)
+	swfobject.embedSWF("http://www.youtube.com/v/" + videoID + 
+	                   "?version=3&enablejsapi=1&playerapiid=player1", 
+	                   "randomVideo", "100%", "100%", "9", null, null, params, atts);
+}
+
+//fires when player is ready
+function onYouTubePlayerReady(playerId) {
+	player = swfobject.getObjectById("ytPlayer");
+	playerReady = true;
+}
+
+//gets a random number between min and max
 function getRandomInt(min, max){
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-//process received answered from the server
-function functionWithData(data) {
-	var deferred = $.Deferred();
+//executes when receiving answer from server
+function videos(data){
+	for(var i = 0; i < data.length; i++){
+		videosUrl.push(data[i].url);
+	}
+}
 
-	//get video duration in seconds
-	window.videoDuration = data.entry.media$group.yt$duration.seconds;
-	window.videoDuration = window.videoDuration*1000;
+//when player is ready, calls loaded
+function checkFlag(loaded) {
+    if(playerReady === false) {
+    	window.setTimeout(function(){
+       	checkFlag(loaded);
+       }, 100); 
+    } else {
+      loaded();
+    }
+}
 
-	//extra 2 seconds given automatically
-	window.videoDuration = window.videoDuration - 2000;
-	console.log("VIDEO DURATION IN MILISECONDS: " + window.videoDuration);
+//gets a random video from the server's list
+function getRandomVideo(loaded){
+	var numVideos = videosUrl.length;
+	//calculates a random number between 1 and numVideos-1 
+	randomNumber = getRandomInt(0, numVideos-1);
 
-	deferred.resolve();
-	return deferred.promise();	
-};
+	//gets the URL of the video on "randomNumber" position	
+	url = videosUrl[randomNumber];
+	console.log("Video URL: " + url);
 
-//lifecycle functions
+	//gets the ID of the video
+	id = url.split("v=")[1];
+	console.log("ID of video: " + id);
+
+	checkFlag(loaded);
+}
+
+//gets the list of videos from server
+function getVideosList(loaded){
+	//gets information of the video in json format
+	var url = "http://pd-player.appspot.com/getschedule?placeid=videos";
+
+	var ajaxRequest = $.ajax({
+	   type: 'GET',
+	    url: url,
+	    async: false,
+	    jsonpCallback: 'videos',
+	    dataType: 'jsonp',
+	    success: function(json) {
+	    	console.log("Everything went well !");
+	    },
+	    error: function(e) {
+	       console.log(e.message);
+	    }
+	});
+
+	//when list of videos is retrieve from the server, choose a random video
+	ajaxRequest.done(function(){
+		getRandomVideo(loaded);
+	});
+}
+
+//listen from state changes on video player
+function onytplayerStateChange(newState) {
+	
+	//if player ends
+	if(newState === 0){
+		//and onPauseRequest didn't happened yet
+		if(onPauseRequestFlag === false){
+
+		//release application after two seconds
+		window.setTimeout(function(){
+			releaseMe();
+			}, 2000);
+		}
+	}
+}
+
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< LIFECYCLE FUNCTIONS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
 function onCreate(){
 	console.log("LIFECYCLE | onCreate of " + document.URL + " is running...");
-	setTimeout(function(){
-		//showMe();
-	},60000);
+	loadPlayer();
 }
 
 function onLoad(loaded){
+
 	console.log("LIFECYCLE | onLoad of " + document.URL + " is running...");
 
 	var c = document.getElementById("randomVideo");
@@ -56,115 +126,64 @@ function onLoad(loaded){
 	if (c === null) {
 		var d = document.createElement("div");
 		d.setAttribute("id", "randomVideo");
-		document.getElementById("content-container").appendChild(d);
+		document.getElementsByTagName('body')[0].appendChild(d);
 	}
-	
-	var sizeIds = ids.length;
-	//calculates a random number between 1 and sizeWords-1 
-	randomNumber = getRandomInt(0,sizeIds-1);
-	//get id in that position	
-	id = ids[randomNumber];
-	
-	//get information of the video in json format
-	var url = "https://gdata.youtube.com/feeds/api/videos/" + id +"?v=2&alt=json";
 
-	$.when($.getJSON(url, functionWithData)).then(function(){
-		//when done, sends message to appScript
-		loaded();
-	});
+	getVideosList(loaded);
 }
 
 function onResume(){
-	//get start time
-	window.startTime = new Date().getTime();
-
-	if(appStopped === 0){
-		console.log("LIFECYCLE | onResume of " + document.URL + " is running...");
-		console.log("RandomVideo is displaying...");
-
-		console.log("STARRRRRRRRRRRRRRRRRRRRT TIME : " + window.startTime );
-
-		//starts playing random video
-		var params = { allowScriptAccess: "always" };
-		swfobject.embedSWF("http://www.youtube.com/e/" + id + "?enablejsapi=1&playerapiid=ytplayer?rel=0&autoplay=1", 
-			"randomVideo", "600", "240", "9.0.0",null, null, params);
+	if(appStopped === false){
+		player.loadVideoById(id);
 	}
 	else{
-		console.log("SECONDS ELLAPSED AFTER PAUSE: " + window.secondsEllapsed);
-		console.log("VIDEO DURATION: " + window.videoDuration);
-		window.videoDuration = window.videoDuration - window.secondsEllapsed;
-		console.log("VIDEO DURATION AFTER PAUSE: " + window.videoDuration);
-		swfobject.getObjectById('randomVideo').playVideo();
+		player.playVideo();
 	}	
+	
+	player.addEventListener("onStateChange", "onytplayerStateChange");
 }
 
 function onPauseRequest(){
-	var timeAux;
 
-	if(appStopped === 0){
-		window.pauseRequestTime = new Date().getTime();
-		window.secondsEllapsed = window.pauseRequestTime - window.startTime;
-		console.log("LIFECYCLE | onPauseRequest of " + document.URL + " is running...");
-		//calculates how many time is needed to finish video
-		console.log("Seconds ellapsed: " + window.secondsEllapsed);
-		console.log("Video duration: " + window.videoDuration);
-		timeAux = window.videoDuration - window.secondsEllapsed;
+	onPauseRequestFlag = true;
 
-		console.log("TIME AUX NO PAUSE: " + timeAux);
+	var videoDuration = player.getDuration();
+	console.log("VIDEO DURATION: " + videoDuration);
 
-		//miliseconds -> seconds
-		timeAux = timeAux / 1000;
-		timeAux = Math.floor(timeAux);
-	}
-	else{
-		console.log("VIDEO DURATION AFTER PAUSE: " + window.videoDuration);
-		window.pauseRequestTime = new Date().getTime();
-		timeAux = window.videoDuration - window.secondsEllapsed;
-		console.log("TIMEAUX AFTER PAUSE: " + timeAux);
+	var ellapsedTime = player.getCurrentTime();
+	console.log("ellapsedTime: " + ellapsedTime);
 
-		//miliseconds -> seconds
-		timeAux = timeAux / 1000;
+	var extraTime = videoDuration - ellapsedTime;
+	console.log(extraTime);
 
-		timeAux = Math.floor(timeAux);
-	}
-
-	//removes remaining seconds of onPause callback
-	//timeAux = timeAux - 9;
-	
-	//if requested time is bigger than 60 seconds
-	if(timeAux > 60){
-		//ignore request
-		return 0;
-	}
-	else{
-		//if is smaller, give requested time to application
-		return timeAux;
-	}
+    return extraTime;
 }
 
-function onPause(callback){
+function onPause(){
 	console.log("LIFECYCLE | onPause of " + document.URL + " is running...");
-	appStopped = 1;
-	//startTime = 0;
+	appStopped = true;
 
 	//pause video
-	swfobject.getObjectById('randomVideo').pauseVideo();
-	window.pausedTime = new Date().getTime();
-	window.secondsEllapsed = window.pausedTime - window.startTime;
-	console.log("SECONDS ELLAPSED AFTER PAUSE: " + window.secondsEllapsed);
+	player.pauseVideo();
+
+	//remove state change listener
+	player.removeEventListener("onStateChange","onytplayerStateChange");
 }
 
 function onUnload(created){
 	console.log("LIFECYCLE | onUnload of " + document.URL + " is running...");
-	appStopped = 0;
+	appStopped = false;
+	onPauseRequestFlag = false;
 
-	//clear swfobject
-	swfobject.removeSWF("randomVideo");
 	created();
 }
 
 function onDestroy(destroyReady){
 	console.log("LIFECYCLE | onDestroy of " + document.URL + " is running...");
+	
+	//clear swfobject
+	swfobject.removeSWF("randomVideo");
+
 	destroyReady();
 }
 

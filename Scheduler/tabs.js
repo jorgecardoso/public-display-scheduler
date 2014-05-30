@@ -33,6 +33,10 @@ function openAppInBackgroundTab(tabUrl){
 function activateBackgroundTab(tabId,url){
 	chrome.tabs.update(tabId, {active: true}, function(tab){
 
+		var applicationToBeActivated = getAppFromTabId(applications, tabId);
+		//keeping record of the last previous loaded application
+		previousLoadedId = applicationToBeActivated.id;
+
 		var regularApps = countingRegularApps(applications);
 
 		///////////////////////////////////////////////////////////////////

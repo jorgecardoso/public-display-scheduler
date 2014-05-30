@@ -47,6 +47,7 @@ function getTime(){
 
 //add the time when an application becomes active
 function addStartTimeToHash(activeTabId, startTime){
+    console.log("ACTIVE TAB: " + activeTabId);
     appsStartime[activeTabId] = startTime;
 }
 
@@ -87,17 +88,29 @@ function addAirtime(tabId, appAirtime){
 function getAppAirtime(tabId){
     var airtimes = applicationsAirtimes[tabId];
 
-    //if more than one airtime is defined
-    if(airtimes.length > 1){
-        var sumAirtimes = 0;
-        for(var i = 0; i < airtimes.length; i++){
-            sumAirtimes = sumAirtimes + airtimes[i];
-        }
+    if(airtimes !== undefined){
+        //if more than one airtime is defined
+        if(airtimes.length > 1){
+            var sumAirtimes = 0;
+            for(var i = 0; i < airtimes.length; i++){
+                sumAirtimes = sumAirtimes + airtimes[i];
+            }
 
-        //returns the sum of all airtimes
-        return sumAirtimes;
+            //returns the sum of all airtimes
+            return sumAirtimes;
+        }
+        else{
+            if(airtimes.length != 0){
+                return airtimes[0];
+            }
+            else{
+                var noValue = 0;
+                return noValue; 
+            }
+        }
     }
     else{
-        return airtimes[0];
+        var noValue = 0;
+        return noValue;
     }
 }

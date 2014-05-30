@@ -1,9 +1,12 @@
 var videotoplay;
+var appPlayer;
 var channelKey = "ondemandvideoplayer";
 var clientid = Math.floor(Math.random()*10000);	
+
+//flags
 var appStopped = false;
-var appPlayer;
-var appDefaultTime = 50;
+var onPauseRequestFlag = false;
+
 
 function onCreate(){
 	
@@ -33,6 +36,8 @@ function onResume(){
 
 function onPauseRequest(){
 
+	onPauseRequestFlag = true;
+
 	appPlayer = swfobject.getObjectById("ytPlayer");
 
 	var videoDuration = appPlayer.getDuration();
@@ -60,6 +65,8 @@ function onPause(){
 function onUnload(unloadReady){
 
 	appStopped === false;
+	onPauseRequestFlag = false;
+	
 	unloadReady(); 
 }
 
@@ -68,16 +75,20 @@ function onDestroy(destroyReady){
     destroyReady();
 }
 
-
-
+//listen from state changes on video player
 function onytplayerStateChange(newState) {
-	var videoDuration = appPlayer.getDuration();
 	
-   if(newState === 0){
-   		if(appDefaultTime > videoDuration){
-   			releaseMe();
-   		}
-   }
+	//if player ends
+	if(newState === 0){
+		//and onPauseRequest didn't happened yet
+		if(onPauseRequestFlag === false){
+
+		//release application after two seconds
+		window.setTimeout(function(){
+			releaseMe();
+			}, 2000);
+		}
+	}
 }
 
 function mySendMessage(message) {

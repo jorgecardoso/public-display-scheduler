@@ -10,16 +10,29 @@ Shows a random video
 </head>
 
 <body>
-<!-- scripts -->
-<script src="https://code.jquery.com/jquery.js"></script>
-<script src="video.js"></script>
+	<!-- scripts -->
+	<script src="https://code.jquery.com/jquery.js"></script>
+	<script src="video.js"></script>
 
-<h1> SMALL Random Youtube Video </h1>
+	<style>
+		html {
+			height:100%;
+			overflow:hidden;
+		}
+		body {
+			margin:0px;
+			padding:0px;
+			background-color:#FFFFFF;
+			height:100%;
+			text-align:center;
+		}
 
-<p id="content-container">
-	<!--<div id="content">Alternative content</div>-->
+		#randomVideo{
+			height: 100%;
+		}
+	</style>
+
 	<div id="randomVideo"></div>
-</p>
 
 </body>
 </html>
