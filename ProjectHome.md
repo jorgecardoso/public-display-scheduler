@@ -1,0 +1,1 @@
+A Google Chrome based public display application scheduler
